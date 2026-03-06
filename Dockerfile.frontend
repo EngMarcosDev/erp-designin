@@ -1,0 +1,14 @@
+FROM node:18-bullseye-slim
+
+WORKDIR /app
+
+# Install build dependencies
+COPY package.json package-lock.json* ./
+RUN npm ci --no-audit --no-fund
+
+# Copy app sources and expose dev port
+COPY . .
+
+EXPOSE 5173
+
+CMD ["npm", "run", "dev"]

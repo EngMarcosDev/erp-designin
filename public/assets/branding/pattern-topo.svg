@@ -1,0 +1,17 @@
+<svg width="1920" height="540" viewBox="0 0 1920 540" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Padrão topográfico Abacaxita">
+  <defs>
+    <linearGradient id="purple-gold" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#7a1f6f" stop-opacity="0.6"/>
+      <stop offset="25%" stop-color="#7a1f6f" stop-opacity="0.2"/>
+      <stop offset="45%" stop-color="transparent" stop-opacity="0"/>
+      <stop offset="100%" stop-color="transparent" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect width="1920" height="540" fill="#8a6a27"/>
+  <g opacity="0.32">
+    <path d="M-40 260c140-120 260-80 340-10s180 160 320 140 200-140 340-120 220 160 360 140 220-200 360-180 260 220 420 200" fill="none" stroke="#c79a4a" stroke-width="6" stroke-linecap="round"/>
+    <path d="M-60 340c160-140 300-90 400-20s200 160 340 140 240-160 380-140 240 180 380 160 240-200 400-180 260 220 420 200" fill="none" stroke="#d8b66a" stroke-width="4" stroke-linecap="round"/>
+    <path d="M-20 420c120-120 240-80 340-10s200 150 340 130 220-140 360-120 220 160 360 140 220-200 360-180 260 220 420 200" fill="none" stroke="#e6c98a" stroke-width="2" stroke-linecap="round"/>
+  </g>
+  <rect width="1920" height="540" fill="url(#purple-gold)"/>
+</svg>

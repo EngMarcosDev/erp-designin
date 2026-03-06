@@ -1,0 +1,288 @@
+import { useState, useEffect, useRef } from 'react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useERP } from '@/contexts/ERPContext';
+import { Category, CATEGORY_LABELS } from '@/types/erp';
+import { toast } from 'sonner';
+import { ImageIcon, Eye, Upload } from 'lucide-react';
+
+interface ProductModalProps {
+  open: boolean;
+  onClose: () => void;
+  productId: string | null;
+}
+
+const categories = Object.keys(CATEGORY_LABELS) as Category[];
+
+export function ProductModal({ open, onClose, productId }: ProductModalProps) {
+  const { products, addProduct, updateProduct } = useERP();
+  const [isLoading, setIsLoading] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [formData, setFormData] = useState({
+    name: '',
+    price: '',
+    category: 'sedas' as Category,
+    stock: '',
+    image: '',
+    active: true,
+  });
+
+  const isEditing = productId !== null;
+  const existingProduct = productId ? products.find((p) => p.id === productId) : null;
+
+  useEffect(() => {
+    if (existingProduct) {
+      setFormData({
+        name: existingProduct.name,
+        price: existingProduct.price.toString(),
+        category: existingProduct.category,
+        stock: existingProduct.stock.toString(),
+        image: existingProduct.image || '',
+        active: existingProduct.active,
+      });
+    } else {
+      setFormData({ name: '', price: '', category: 'sedas', stock: '', image: '', active: true });
+    }
+  }, [existingProduct, open]);
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('Imagem deve ter no máximo 5MB');
+        return;
+      }
+      const url = URL.createObjectURL(file);
+      setFormData(prev => ({ ...prev, image: url }));
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    if (!formData.name.trim()) {
+      toast.error('Nome do produto é obrigatório');
+      setIsLoading(false);
+      return;
+    }
+
+    const price = parseFloat(formData.price);
+    if (isNaN(price) || price < 0) {
+      toast.error('Preço inválido');
+      setIsLoading(false);
+      return;
+    }
+
+    const stock = parseInt(formData.stock);
+    if (isNaN(stock) || stock < 0) {
+      toast.error('Estoque inválido');
+      setIsLoading(false);
+      return;
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
+    const productData = {
+      name: formData.name.trim(),
+      price,
+      category: formData.category,
+      stock,
+      image: formData.image.trim() || undefined,
+      active: formData.active,
+    };
+
+    if (isEditing && productId) {
+      updateProduct(productId, productData);
+      toast.success('Produto atualizado com sucesso!');
+    } else {
+      addProduct(productData);
+      toast.success('Produto cadastrado com sucesso!');
+    }
+
+    setIsLoading(false);
+    onClose();
+  };
+
+  return (
+    <>
+      <Dialog open={open} onOpenChange={onClose}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader className="bg-primary/10 -mx-6 -mt-6 px-6 pt-6 pb-4 rounded-t-lg">
+            <DialogTitle>
+              {isEditing ? 'Editar Produto' : 'Novo Produto'}
+            </DialogTitle>
+          </DialogHeader>
+
+          <form onSubmit={handleSubmit} className="space-y-4 pt-2">
+            <div className="space-y-2">
+              <Label htmlFor="name">Nome do Produto</Label>
+              <Input
+                id="name"
+                value={formData.name}
+                onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
+                placeholder="Ex: Seda Premium"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="price">Preço (R$)</Label>
+                <Input
+                  id="price"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formData.price}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, price: e.target.value }))}
+                  placeholder="0.00"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="stock">Estoque</Label>
+                <Input
+                  id="stock"
+                  type="number"
+                  min="0"
+                  value={formData.stock}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, stock: e.target.value }))}
+                  placeholder="0"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="category">Categoria</Label>
+              <Select
+                value={formData.category}
+                onValueChange={(value: Category) => setFormData((prev) => ({ ...prev, category: value }))}
+              >
+                <SelectTrigger><SelectValue placeholder="Selecione uma categoria" /></SelectTrigger>
+                <SelectContent>
+                  {categories.map((cat) => (
+                    <SelectItem key={cat} value={cat}>{CATEGORY_LABELS[cat]}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Image - URL or Upload */}
+            <div className="space-y-2">
+              <Label>Imagem do Produto</Label>
+              <Tabs defaultValue="upload" className="w-full">
+                <TabsList className="w-full">
+                  <TabsTrigger value="upload" className="flex-1 gap-1"><Upload className="h-3 w-3" /> Upload</TabsTrigger>
+                  <TabsTrigger value="url" className="flex-1 gap-1"><ImageIcon className="h-3 w-3" /> URL</TabsTrigger>
+                </TabsList>
+                <TabsContent value="upload" className="mt-2">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleFileUpload}
+                  />
+                  <Button type="button" variant="outline" className="w-full gap-2" onClick={() => fileInputRef.current?.click()}>
+                    <Upload className="h-4 w-4" />
+                    Selecionar Imagem
+                  </Button>
+                </TabsContent>
+                <TabsContent value="url" className="mt-2">
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <ImageIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        value={formData.image}
+                        onChange={(e) => setFormData((prev) => ({ ...prev, image: e.target.value }))}
+                        placeholder="https://exemplo.com/imagem.jpg"
+                        className="pl-10"
+                      />
+                    </div>
+                    {formData.image && (
+                      <Button type="button" variant="outline" size="icon" onClick={() => setPreviewOpen(true)} title="Visualizar">
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                </TabsContent>
+              </Tabs>
+              {formData.image && (
+                <div className="mt-2 rounded-lg overflow-hidden border bg-muted/30 h-24 flex items-center justify-center relative">
+                  <img
+                    src={formData.image}
+                    alt="Preview"
+                    className="max-h-full max-w-full object-contain"
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute top-1 right-1 text-xs text-destructive h-6"
+                    onClick={() => setFormData(prev => ({ ...prev, image: '' }))}
+                  >
+                    Remover
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label htmlFor="active">Status</Label>
+                <p className="text-sm text-muted-foreground">Produto visível no site</p>
+              </div>
+              <Switch
+                id="active"
+                checked={formData.active}
+                onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, active: checked }))}
+              />
+            </div>
+
+            <DialogFooter className="gap-2 sm:gap-0">
+              <Button type="button" variant="outline" onClick={onClose}>Cancelar</Button>
+              <Button type="submit" disabled={isLoading}>
+                {isLoading ? 'Salvando...' : 'Salvar'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Image Preview Modal */}
+      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader className="bg-primary/10 -mx-6 -mt-6 px-6 pt-6 pb-4 rounded-t-lg">
+            <DialogTitle>Preview da Imagem</DialogTitle>
+          </DialogHeader>
+          <div className="flex items-center justify-center p-4 bg-muted/30 rounded-lg min-h-[300px]">
+            {formData.image ? (
+              <img src={formData.image} alt="Preview do produto" className="max-w-full max-h-[400px] object-contain rounded" onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder.svg'; }} />
+            ) : (
+              <p className="text-muted-foreground">Nenhuma imagem informada</p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}

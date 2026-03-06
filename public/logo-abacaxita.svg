@@ -1,0 +1,18 @@
+<svg width="240" height="240" viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Abacaxita logo">
+  <defs>
+    <linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#c1a062"/>
+      <stop offset="50%" stop-color="#7fbf72"/>
+      <stop offset="100%" stop-color="#f05f3b"/>
+    </linearGradient>
+    <linearGradient id="g2" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#2e3f27" stop-opacity=".95"/>
+      <stop offset="100%" stop-color="#1b2418" stop-opacity=".9"/>
+    </linearGradient>
+  </defs>
+  <rect width="240" height="240" rx="48" fill="url(#g2)"/>
+  <circle cx="120" cy="120" r="82" fill="none" stroke="url(#g1)" stroke-width="14"/>
+  <path d="M120 52 96 92l24 16 24-16z" fill="#f7f2e8" stroke="#c1a062" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M96 92v40l24 16 24-16V92l-24 16z" fill="url(#g1)" stroke="#f7f2e8" stroke-width="4" stroke-linejoin="round"/>
+  <circle cx="120" cy="120" r="10" fill="#f7f2e8" stroke="#1b2418" stroke-width="3"/>
+</svg>

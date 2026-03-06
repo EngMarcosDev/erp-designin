@@ -1,0 +1,14 @@
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Install deps from package.json
+COPY package.json package-lock.json* ./
+RUN npm install --production || npm install
+
+# copy full workspace (for development mount is used)
+COPY . .
+
+EXPOSE 5050
+
+CMD ["node", "backend/server.cjs"]

@@ -1,0 +1,8 @@
+{
+    "chat.tools.terminal.autoApprove": {
+        "/^docker compose exec db psql -U abacaxita -d abacaxita_erp -f /tmp/20260212_erp_novidades\\.sql$/": {
+            "approve": true,
+            "matchCommandLine": true
+        }
+    }
+}

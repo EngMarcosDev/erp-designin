@@ -1,0 +1,307 @@
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Lato:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 35 35% 96%;
+    --foreground: 30 27% 16%;
+    --card: 35 32% 98%;
+    --card-foreground: 30 27% 16%;
+    --popover: 35 32% 98%;
+    --popover-foreground: 30 27% 16%;
+    --primary: 28 30% 40%; /* marrom botoes */
+    --primary-foreground: 35 35% 96%;
+    --secondary: 35 30% 93%;
+    --secondary-foreground: 30 27% 16%;
+    --muted: 35 22% 90%;
+    --muted-foreground: 30 18% 42%;
+    --accent: 96 32% 38%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 3 72% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --warning: 38 76% 54%;
+    --warning-foreground: 30 30% 18%;
+    --rasta-green: 125 45% 40%;
+    --rasta-yellow: 45 90% 55%;
+    --rasta-red: 5 70% 48%;
+    --header: 28 28% 18%;
+    --header-foreground: 35 35% 96%;
+    --footer: 100 35% 20%;
+    --footer-foreground: 35 35% 96%;
+    --border: 33 30% 84%;
+    --input: 33 30% 88%;
+    --ring: 96 32% 38%;
+    --radius: 0.75rem;
+    --sidebar-background: 27 25% 18%;
+    --sidebar-foreground: 35 35% 96%;
+    --sidebar-primary: 30 60% 50%;
+    --sidebar-primary-foreground: 35 35% 96%;
+    --sidebar-accent: 30 45% 24%;
+    --sidebar-accent-foreground: 35 35% 96%;
+    --sidebar-border: 27 20% 22%;
+    --sidebar-ring: 96 32% 38%;
+    --shadow-soft: 0 10px 30px rgba(32, 23, 12, 0.08);
+    --shadow-strong: 0 20px 60px rgba(32, 23, 12, 0.12);
+    --popup-tint: #f4ede1;
+    /* Categorias */
+    --category-sedas: 27 44% 46%;
+    --category-piteira: 93 44% 33%;
+    --category-cuia: 27 59% 45%;
+    --category-bacakits: 19 47% 42%;
+    --category-acessorios: 199 36% 38%;
+    /* Status */
+    --status-success: 133 55% 42%;
+    --status-warning: 38 76% 54%;
+    --status-pending: 28 62% 52%;
+    --status-error: 3 72% 50%;
+    --popup-header: #f0e4d2;
+  }
+
+  .dark {
+    --background: 222 24% 9%;
+    --foreground: 36 30% 95%;
+    --card: 223 19% 14%;
+    --card-foreground: 36 30% 95%;
+    --popover: 223 19% 14%;
+    --popover-foreground: 36 30% 95%;
+    --primary: 148 52% 42%;
+    --primary-foreground: 220 35% 96%;
+    --secondary: 221 18% 20%;
+    --secondary-foreground: 36 30% 95%;
+    --muted: 221 16% 17%;
+    --muted-foreground: 34 16% 74%;
+    --accent: 43 84% 56%;
+    --accent-foreground: 222 24% 11%;
+    --border: 222 14% 25%;
+    --input: 222 14% 25%;
+    --ring: 148 52% 42%;
+    --header: 223 28% 10%;
+    --header-foreground: 36 30% 95%;
+    --footer: 224 24% 12%;
+    --footer-foreground: 36 30% 95%;
+    --sidebar-background: 223 30% 11%;
+    --sidebar-foreground: 36 28% 94%;
+    --sidebar-primary: 148 52% 42%;
+    --sidebar-primary-foreground: 220 35% 96%;
+    --sidebar-accent: 222 18% 22%;
+    --sidebar-accent-foreground: 36 28% 94%;
+    --sidebar-border: 222 14% 26%;
+    --sidebar-ring: 148 52% 42%;
+    --shadow-soft: 0 12px 30px rgba(3, 8, 20, 0.45);
+    --shadow-strong: 0 26px 70px rgba(3, 8, 20, 0.65);
+    --popup-header: #1b253b;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground font-body antialiased;
+    font-family: 'Lato', system-ui, -apple-system, sans-serif;
+    background-image:
+      radial-gradient(circle at 10% 20%, rgba(146, 111, 63, 0.04) 0, rgba(146, 111, 63, 0) 35%),
+      radial-gradient(circle at 80% 0, rgba(60, 92, 48, 0.06) 0, rgba(60, 92, 48, 0) 30%),
+      linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(247, 242, 233, 0.9) 100%);
+    background-attachment: fixed;
+  }
+  .dark body {
+    background-image:
+      radial-gradient(circle at 12% 18%, rgba(59, 130, 246, 0.14) 0, rgba(59, 130, 246, 0) 40%),
+      radial-gradient(circle at 88% 0, rgba(34, 197, 94, 0.12) 0, rgba(34, 197, 94, 0) 35%),
+      linear-gradient(145deg, rgba(16, 24, 40, 0.95) 0%, rgba(10, 14, 24, 0.98) 100%);
+  }
+  .gradient-bar {
+    background: linear-gradient(90deg, #c08d2b 0%, #6f8f3d 50%, #d6543f 100%);
+  }
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display;
+  }
+  .dark h1,
+  .dark h2 {
+    letter-spacing: 0.02em;
+    color: hsl(44 92% 72%);
+    text-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+  }
+  .dark h3,
+  .dark h4 {
+    color: hsl(36 34% 92%);
+  }
+}
+
+@layer components {
+  .card-soft {
+    @apply bg-white border border-border rounded-xl;
+    box-shadow: var(--shadow-soft);
+  }
+
+  .card-strong {
+    @apply bg-white border border-border rounded-xl;
+    box-shadow: var(--shadow-strong);
+  }
+
+  /* Rasta stripe decoration */
+  .rasta-stripe {
+    height: 6px;
+    background: linear-gradient(90deg, 
+      hsl(var(--rasta-green)) 0%, 
+      hsl(var(--rasta-green)) 33.33%, 
+      hsl(var(--rasta-yellow)) 33.33%, 
+      hsl(var(--rasta-yellow)) 66.66%, 
+      hsl(var(--rasta-red)) 66.66%, 
+      hsl(var(--rasta-red)) 100%
+    );
+  }
+
+  /* Header with wood texture effect */
+  .header-wood {
+    background: linear-gradient(
+      180deg,
+      hsl(30 45% 14%) 0%,
+      hsl(30 40% 18%) 50%,
+      hsl(30 45% 14%) 100%
+    );
+    position: relative;
+  }
+  
+  .header-wood::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      90deg,
+      transparent 0px,
+      transparent 2px,
+      hsl(30 30% 20% / 0.3) 2px,
+      hsl(30 30% 20% / 0.3) 4px
+    );
+    opacity: 0.5;
+  }
+
+  /* Footer with green wood texture */
+  .footer-wood {
+    background: linear-gradient(
+      180deg,
+      hsl(100 35% 22%) 0%,
+      hsl(100 30% 18%) 100%
+    );
+    position: relative;
+  }
+
+  .footer-wood::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      90deg,
+      transparent 0px,
+      transparent 3px,
+      hsl(100 25% 15% / 0.4) 3px,
+      hsl(100 25% 15% / 0.4) 5px
+    );
+    opacity: 0.4;
+  }
+
+  /* Paper texture background */
+  .paper-bg {
+    background-color: hsl(var(--background));
+    background-image: 
+      radial-gradient(ellipse at 85% 90%, hsl(100 30% 85% / 0.15) 0%, transparent 40%),
+      radial-gradient(ellipse at 15% 10%, hsl(45 40% 90% / 0.2) 0%, transparent 50%);
+  }
+
+  /* Elegant card */
+  .card-product {
+    @apply bg-card rounded-lg border border-border/50;
+    box-shadow: 0 2px 8px -2px hsl(30 30% 20% / 0.08);
+    transition: all 0.3s ease;
+  }
+  
+  .card-product:hover {
+    box-shadow: 0 8px 24px -4px hsl(30 30% 20% / 0.15);
+    transform: translateY(-2px);
+  }
+
+  /* Category pills + banners */
+  .category-banner {
+    @apply text-white rounded-xl px-4 py-3 shadow-sm flex flex-col gap-0.5;
+  }
+  .category-sedas { background-color: hsl(var(--category-sedas)); }
+  .category-piteira { background-color: hsl(var(--category-piteira)); }
+  .category-cuia { background-color: hsl(var(--category-cuia)); }
+  .category-bacakits { background-color: hsl(var(--category-bacakits)); }
+  .category-acessorios { background-color: hsl(var(--category-acessorios)); }
+
+  /* Glass effect for dialogs */
+  .dialog-overlay {
+    background: rgba(0, 0, 0, 0.6);
+    @apply backdrop-blur-sm;
+  }
+  .glass-panel {
+    background: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
+    box-shadow: var(--shadow-soft);
+  }
+
+  .dialog-titlebar {
+    background: var(--popup-header);
+  }
+
+  /* Hover animation for report links */
+  @keyframes reportGlow {
+    0% { color: hsl(var(--rasta-green)); }
+    50% { color: hsl(var(--rasta-yellow)); }
+    100% { color: hsl(var(--rasta-red)); }
+  }
+  .report-hover-card:hover .report-glow-target {
+    animation: reportGlow 1.4s ease-in-out infinite alternate;
+    color: hsl(var(--rasta-green));
+  }
+
+  /* Category circle */
+  .category-circle {
+    @apply rounded-full bg-card border-2 border-border flex items-center justify-center;
+    box-shadow: 0 2px 8px -2px hsl(30 30% 20% / 0.1);
+    transition: all 0.3s ease;
+  }
+  
+  .category-circle:hover {
+    @apply border-accent;
+    box-shadow: 0 4px 12px -2px hsl(100 50% 28% / 0.2);
+  }
+
+  /* Badge */
+  .badge-new {
+    @apply bg-accent text-accent-foreground text-[10px] md:text-xs font-bold px-2 py-0.5 rounded uppercase tracking-wider;
+  }
+}
+
+.logo-watermark { position: relative; }
+.logo-watermark::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image: url("/assets/branding/logo-glow.svg");
+  background-repeat: no-repeat;
+  background-position: 80% 18%;
+  background-size: 360px;
+  opacity: 0.07;
+  pointer-events: none;
+  z-index: -1;
+}
+.dark .logo-watermark::after {
+  opacity: 0.12;
+  filter: hue-rotate(165deg) saturate(1.15);
+}
+
+.hero-splash {
+  background-image:
+    linear-gradient(135deg, rgba(255,255,255,0.9), rgba(247,242,233,0.92)),
+    url("/assets/branding/pattern-topo.svg");
+  background-size: cover;
+  background-repeat: no-repeat;
+}

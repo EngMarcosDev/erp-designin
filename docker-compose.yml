@@ -1,0 +1,41 @@
+services:
+  db:
+    image: postgres:15
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-abacaxita}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me}
+      POSTGRES_DB: ${POSTGRES_DB:-abacaxita_erp}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    ports:
+      - "${DB_PORT:-5432}:5432"
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    volumes:
+      - .:/app:cached
+    ports:
+      - "${BACKEND_PORT:-5050}:5050"
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql://abacaxita:change_me@db:5432/abacaxita_erp}
+      PORT: 5050
+      HEADSHOP_API_URL: ${HEADSHOP_API_URL:-http://frontend:5173/api}
+    depends_on:
+      - db
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    ports:
+      - "${FRONTEND_PORT:-5173}:5173"
+    environment:
+      VITE_API_URL: ${VITE_API_URL:-http://localhost:5050}
+    depends_on:
+      - backend
+
+volumes:
+  db_data:
