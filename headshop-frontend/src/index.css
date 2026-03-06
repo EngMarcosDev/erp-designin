@@ -1,0 +1,393 @@
+﻿@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Lato:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 40 30% 95%;
+    --foreground: 30 40% 15%;
+    --card: 40 25% 97%;
+    --card-foreground: 30 40% 15%;
+    --popover: 40 25% 97%;
+    --popover-foreground: 30 40% 15%;
+    --primary: 30 50% 18%;
+    --primary-foreground: 40 30% 95%;
+    --secondary: 40 20% 88%;
+    --secondary-foreground: 30 40% 15%;
+    --muted: 40 15% 92%;
+    --muted-foreground: 30 20% 45%;
+    --accent: 100 50% 28%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --warning: 45 100% 50%;
+    --warning-foreground: 30 40% 15%;
+    --rasta-green: 100 50% 28%;
+    --rasta-yellow: 45 100% 55%;
+    --rasta-red: 5 75% 50%;
+    --header: 30 45% 14%;
+    --header-foreground: 40 30% 92%;
+    --footer: 100 35% 20%;
+    --footer-foreground: 40 30% 92%;
+    --border: 40 20% 85%;
+    --input: 40 20% 90%;
+    --ring: 100 50% 28%;
+    --radius: 0.5rem;
+    --sidebar-background: 40 30% 95%;
+    --sidebar-foreground: 30 40% 15%;
+    --sidebar-primary: 30 50% 18%;
+    --sidebar-primary-foreground: 40 30% 95%;
+    --sidebar-accent: 100 50% 28%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 40 20% 85%;
+    --sidebar-ring: 100 50% 28%;
+  }
+
+  .dark {
+    --background: 30 40% 8%;
+    --foreground: 40 30% 92%;
+    --card: 30 35% 12%;
+    --card-foreground: 40 30% 92%;
+    --popover: 30 35% 12%;
+    --popover-foreground: 40 30% 92%;
+    --primary: 40 30% 88%;
+    --primary-foreground: 30 40% 10%;
+    --secondary: 30 30% 18%;
+    --secondary-foreground: 40 30% 92%;
+    --muted: 30 25% 16%;
+    --muted-foreground: 40 15% 60%;
+    --accent: 100 45% 38%;
+    --accent-foreground: 0 0% 100%;
+    --border: 30 25% 22%;
+    --input: 30 25% 22%;
+    --ring: 100 45% 38%;
+    --header: 30 40% 8%;
+    --header-foreground: 40 30% 92%;
+    --footer: 100 30% 15%;
+    --footer-foreground: 40 30% 92%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground font-body antialiased;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display;
+  }
+}
+
+@layer components {
+  /* Rasta stripe decoration */
+  .rasta-stripe {
+    height: 6px;
+    background: linear-gradient(90deg, 
+      hsl(var(--rasta-green)) 0%, 
+      hsl(var(--rasta-green)) 33.33%, 
+      hsl(var(--rasta-yellow)) 33.33%, 
+      hsl(var(--rasta-yellow)) 66.66%, 
+      hsl(var(--rasta-red)) 66.66%, 
+      hsl(var(--rasta-red)) 100%
+    );
+  }
+
+  /* Header with wood texture effect */
+  .header-wood {
+    background: linear-gradient(
+      180deg,
+      hsl(30 45% 14%) 0%,
+      hsl(30 40% 18%) 50%,
+      hsl(30 45% 14%) 100%
+    );
+    position: relative;
+  }
+  
+  .header-wood::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      90deg,
+      transparent 0px,
+      transparent 2px,
+      hsl(30 30% 20% / 0.3) 2px,
+      hsl(30 30% 20% / 0.3) 4px
+    );
+    opacity: 0.5;
+  }
+
+  /* Category banner */
+  .category-banner {
+    @apply w-full;
+  }
+
+  .category-banner-bg {
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(120deg, #2b7a2d 0%, #3f7a2d 60%, #4a6a2f 100%);
+  }
+
+  .category-banner-bg::before,
+  .category-banner-bg::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(120deg, #d5a826 0%, #e0b85a 60%, #c24a3d 100%);
+    opacity: 0;
+    animation: category-fade 12s ease-in-out infinite;
+  }
+
+  .category-banner-bg::after {
+    background: linear-gradient(120deg, #c43b2f 0%, #c64a35 60%, #8f2f2a 100%);
+    animation-delay: 4s;
+  }
+
+  .category-banner-bg > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Footer with green wood texture */
+  .footer-wood {
+    background: linear-gradient(
+      180deg,
+      hsl(100 35% 22%) 0%,
+      hsl(100 30% 18%) 100%
+    );
+    position: relative;
+  }
+
+  .footer-wood::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      90deg,
+      transparent 0px,
+      transparent 3px,
+      hsl(100 25% 15% / 0.4) 3px,
+      hsl(100 25% 15% / 0.4) 5px
+    );
+    opacity: 0.4;
+  }
+
+  /* Paper texture background */
+  .paper-bg {
+    background-color: hsl(var(--background));
+    background-image: 
+      radial-gradient(ellipse at 85% 90%, hsl(100 30% 85% / 0.15) 0%, transparent 40%),
+      radial-gradient(ellipse at 15% 10%, hsl(45 40% 90% / 0.2) 0%, transparent 50%);
+  }
+
+  /* Elegant card */
+  .card-product {
+    @apply bg-card rounded-lg border border-border/50;
+    box-shadow: 0 2px 8px -2px hsl(30 30% 20% / 0.08);
+    transition: all 0.3s ease;
+  }
+  
+  .card-product:hover {
+    box-shadow: 0 8px 24px -4px hsl(30 30% 20% / 0.15);
+    transform: translateY(-2px);
+  }
+
+  /* Category circle */
+  .category-circle {
+    @apply rounded-full bg-card border-2 border-border flex items-center justify-center;
+    box-shadow: 0 2px 8px -2px hsl(30 30% 20% / 0.1);
+    transition: all 0.3s ease;
+  }
+  
+  .category-circle:hover {
+    @apply border-accent;
+    box-shadow: 0 4px 12px -2px hsl(100 50% 28% / 0.2);
+  }
+
+  /* Badge */
+  .badge-new {
+    @apply bg-accent text-accent-foreground text-[10px] md:text-xs font-bold px-2 py-0.5 rounded uppercase tracking-wider;
+  }
+
+  .news-banner {
+    width: 100vw;
+    margin-left: calc(50% - 50vw);
+    margin-right: calc(50% - 50vw);
+    padding: 18px 0 22px;
+  }
+
+  .news-banner-shell {
+    position: relative;
+  }
+
+  .news-banner-header {
+    @apply max-w-6xl mx-auto px-3 sm:px-4 md:px-6 mb-3;
+  }
+
+  .news-banner-title {
+    @apply text-sm sm:text-base md:text-lg font-display font-bold uppercase tracking-[0.3em] text-foreground;
+  }
+
+  .news-banner-track {
+    @apply w-full overflow-hidden border border-border/60 bg-card;
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 100%;
+    scroll-snap-type: x mandatory;
+    box-shadow: 0 10px 24px -16px hsl(30 30% 20% / 0.25);
+    touch-action: pan-y;
+    user-select: none;
+    transition: transform 1s ease;
+  }
+
+  .news-banner-slide {
+    @apply flex items-center justify-center min-h-[160px] sm:min-h-[200px] md:min-h-[240px];
+    scroll-snap-align: start;
+    transition: opacity 1s ease, transform 1s ease;
+    background: linear-gradient(120deg, hsl(40 35% 94%), hsl(45 50% 92%));
+  }
+
+  .news-banner-slide-inner {
+    @apply w-full h-full flex items-center justify-center;
+  }
+
+  .news-banner-card {
+    @apply flex items-center gap-6 rounded-2xl border border-border/60 bg-background/80 px-8 py-6;
+    min-width: min(720px, 88vw);
+    box-shadow: 0 12px 28px -18px hsl(30 30% 20% / 0.35);
+  }
+
+  .news-banner-image {
+    width: 140px;
+    height: 140px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, hsl(45 65% 90%), hsl(35 50% 88%));
+    border: 1px solid hsl(var(--border));
+    position: relative;
+    overflow: hidden;
+    background-size: cover;
+    background-position: center;
+  }
+
+  .news-banner-text {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .news-banner-subtitle {
+    @apply text-sm sm:text-base text-muted-foreground tracking-widest uppercase;
+  }
+
+  .news-banner-name {
+    @apply text-lg sm:text-xl font-semibold text-foreground;
+  }
+
+  .news-banner-price {
+    @apply text-base sm:text-lg font-bold text-accent;
+  }
+
+  .news-banner-image-label {
+    position: absolute;
+    left: 12px;
+    top: 12px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: hsl(var(--accent));
+    color: hsl(var(--accent-foreground));
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+  }
+
+  .news-banner-label {
+    @apply text-base sm:text-lg md:text-xl font-display font-bold uppercase tracking-[0.35em] text-foreground;
+  }
+
+  .news-banner-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 36px;
+    height: 36px;
+    border-radius: 999px;
+    border: 1px solid hsl(var(--border));
+    background: hsl(var(--card));
+    color: hsl(var(--foreground));
+    box-shadow: 0 6px 16px -10px hsl(30 30% 20% / 0.4);
+    font-size: 24px;
+    line-height: 1;
+    display: grid;
+    place-items: center;
+    opacity: 0.7;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  }
+
+  .news-banner-nav:hover {
+    opacity: 1;
+    transform: translateY(-50%) scale(1.05);
+  }
+
+  .news-banner-prev {
+    left: 10px;
+  }
+
+  .news-banner-next {
+    right: 10px;
+  }
+
+  .news-banner-progress {
+    @apply mt-3 flex items-center gap-2 max-w-6xl mx-auto px-3 sm:px-4 md:px-6;
+  }
+
+  .news-banner-progress-item {
+    @apply flex-1 h-1.5 rounded-full bg-border/60 overflow-hidden cursor-pointer;
+    border: 1px solid transparent;
+  }
+
+  .news-banner-progress-item.is-active {
+    border-color: hsl(var(--accent));
+    box-shadow: 0 0 0 2px hsl(var(--accent) / 0.15);
+  }
+
+  .news-banner-progress-fill {
+    @apply block h-full bg-accent/70 opacity-0;
+    transform-origin: left center;
+  }
+
+  .news-banner-progress-fill.is-active {
+    opacity: 1;
+    animation-name: news-progress;
+    animation-timing-function: linear;
+    animation-fill-mode: forwards;
+  }
+}
+
+@keyframes category-fade {
+  0% {
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  40% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes news-progress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}

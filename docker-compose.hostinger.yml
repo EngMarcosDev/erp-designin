@@ -1,0 +1,118 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - abacaxita
+
+  db-bootstrap:
+    image: postgres:15-alpine
+    restart: "no"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - ./backend/sql:/sql:ro
+    command: >
+      sh -c "
+      psql -h postgres -U ${POSTGRES_USER} -d ${POSTGRES_DB} -f /sql/20260212_erp_novidades.sql
+      "
+    networks:
+      - abacaxita
+
+  erp-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-bootstrap:
+        condition: service_completed_successfully
+    environment:
+      PORT: 5050
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      HEADSHOP_API_URL: http://headshop-backend:3333/api
+    expose:
+      - "5050"
+    networks:
+      - abacaxita
+
+  headshop-backend:
+    build:
+      context: ./headshop-backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PORT: 3333
+      HOST: 0.0.0.0
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?schema=${HEADSHOP_DB_SCHEMA}
+      JWT_SECRET: ${HEADSHOP_JWT_SECRET}
+      MP_ACCESS_TOKEN: ${MP_ACCESS_TOKEN}
+      MP_SUCCESS_URL: ${MP_SUCCESS_URL}
+      MP_FAILURE_URL: ${MP_FAILURE_URL}
+      MP_PENDING_URL: ${MP_PENDING_URL}
+      MP_WEBHOOK_URL: ${MP_WEBHOOK_URL}
+    command: sh -c "npx prisma db push && npx tsx src/server.ts"
+    expose:
+      - "3333"
+    networks:
+      - abacaxita
+
+  erp-frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.erp-frontend
+      args:
+        VITE_API_URL: /api/erp
+    restart: unless-stopped
+    depends_on:
+      - erp-backend
+      - headshop-backend
+    ports:
+      - "${ERP_FRONTEND_PORT}:80"
+    networks:
+      - abacaxita
+
+  headshop-frontend:
+    build:
+      context: ./headshop-frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: /api
+        VITE_ERP_API_URL: /api/erp
+        VITE_ERP_URL: ${PUBLIC_ERP_URL}
+    restart: unless-stopped
+    depends_on:
+      - headshop-backend
+      - erp-backend
+    ports:
+      - "${HEADSHOP_FRONTEND_PORT}:80"
+    networks:
+      - abacaxita
+
+volumes:
+  postgres_data:
+
+networks:
+  abacaxita:
+    driver: bridge

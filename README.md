@@ -6,10 +6,15 @@ Repositorio do projeto Abacaxita com backend e frontend orquestrados via Docker.
 
 - `backend/`
 - `frontend/`
+- `headshop-backend/`
+- `headshop-frontend/`
 - `docker-compose.yml`
+- `docker-compose.hostinger.yml`
 - `Dockerfile.backend`
 - `Dockerfile.frontend`
+- `Dockerfile.erp-frontend`
 - `.env.example`
+- `.env.hostinger.example`
 
 ## Rodar com Docker
 
@@ -23,3 +28,11 @@ docker compose up --build
 - `DATABASE_URL`
 - `VITE_API_URL`
 - `VITE_ADMIN_EMAILS`
+
+## Deploy Hostinger
+
+Use o compose de producao:
+
+```bash
+docker compose --env-file .env.hostinger -f docker-compose.hostinger.yml up -d --build
+```

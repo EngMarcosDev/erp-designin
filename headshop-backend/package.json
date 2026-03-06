@@ -1,0 +1,42 @@
+{
+    "name": "abacaxita-headshop-backend",
+    "version": "0.1.0",
+    "description": "",
+    "main": "dist/server.js",
+    "scripts": {
+        "dev": "node scripts/free-port.mjs && tsx watch src/server.ts",
+        "build": "tsc -p tsconfig.json",
+        "start": "node dist/server.js",
+        "lint": "echo 'no lint configured'",
+        "prisma": "prisma",
+        "db:pull": "prisma db pull",
+        "db:generate": "prisma generate",
+        "db:push": "prisma db push",
+        "db:reset": "prisma db push --force-reset && npm run db:seed",
+        "db:migrate": "prisma migrate dev",
+        "db:seed": "prisma db seed"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "type": "module",
+    "dependencies": {
+        "@fastify/cors": "^11.2.0",
+        "@fastify/formbody": "^8.0.2",
+        "@fastify/jwt": "^10.0.0",
+        "@prisma/client": "^5.18.0",
+        "bcryptjs": "^3.0.3",
+        "dotenv": "^17.3.1",
+        "fastify": "^5.7.4",
+        "zod": "^4.3.6"
+    },
+    "devDependencies": {
+        "@types/node": "^25.2.0",
+        "prisma": "^5.18.0",
+        "tsx": "^4.21.0",
+        "typescript": "^5.9.3"
+    },
+    "prisma": {
+        "seed": "tsx prisma/seed.ts"
+    }
+}
