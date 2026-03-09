@@ -31,8 +31,11 @@ docker compose up --build
 
 ## Deploy Hostinger
 
-Use o compose de producao:
+Tudo que o Hostinger precisa está em `docker-compose.hostinger.yml` e `.env.hostinger.example`. Copie o exemplo para `.env.hostinger`, preencha os segredos (Postgres, MercadoPago, URLs públicos etc.) e siga o passo a passo oficial detalhado em `docs/Hostinger-Deploy.md`.
 
 ```bash
+cp .env.hostinger.example .env.hostinger
 docker compose --env-file .env.hostinger -f docker-compose.hostinger.yml up -d --build
 ```
+
+O deploy também funciona como parte de um fluxo de releases (build das imagens + push para o servidor). Use os scripts/documentação em `docs/Hostinger-Deploy.md` para checar saúde dos serviços, reconfigurar portas/volumes e automatizar a atualização remota via GitHub Actions ou um `deploy.sh`.
