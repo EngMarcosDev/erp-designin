@@ -34,6 +34,7 @@ import { toast } from 'sonner';
 export default function UsuariosPage() {
   const { users, toggleUserStatus, batchToggleUserStatus, updateUser, deleteUser, currentUser } = useERP();
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'active' | 'inactive' | 'all'>('active');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -47,9 +48,14 @@ export default function UsuariosPage() {
 
   const filteredUsers = users
     .filter((user) =>
-      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchTerm.toLowerCase())
+      (user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.email.toLowerCase().includes(searchTerm.toLowerCase())) &&
+      (statusFilter === 'all' || (statusFilter === 'active' ? user.active : !user.active))
     )
+    .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+
+  const permissionUsers = users
+    .filter((user) => statusFilter === 'all' || (statusFilter === 'active' ? user.active : !user.active))
     .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
 
   const handleEdit = (id: string) => {
@@ -239,6 +245,16 @@ export default function UsuariosPage() {
                 className="pl-10"
               />
             </div>
+            <Select value={statusFilter} onValueChange={(value: 'active' | 'inactive' | 'all') => setStatusFilter(value)}>
+              <SelectTrigger className="w-full sm:w-44">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="active">Somente ativos</SelectItem>
+                <SelectItem value="inactive">Somente inativos</SelectItem>
+                <SelectItem value="all">Todos</SelectItem>
+              </SelectContent>
+            </Select>
             {selectedIds.length > 0 && (
               <div className="flex gap-2">
                 <Badge variant="secondary" className="py-1.5">{selectedIds.length} selecionado(s)</Badge>
@@ -381,7 +397,7 @@ export default function UsuariosPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {users.sort((a, b) => a.name.localeCompare(b.name, 'pt-BR')).map((user) => (
+                    {permissionUsers.map((user) => (
                       <TableRow key={user.id}>
                         <TableCell>
                           <div className="flex items-center gap-3">

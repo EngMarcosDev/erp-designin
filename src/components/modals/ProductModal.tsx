@@ -31,6 +31,11 @@ interface ProductModalProps {
 }
 
 const categories = Object.keys(CATEGORY_LABELS) as Category[];
+const PRODUCT_IMAGE_MAX_MB = 5;
+const BANNER_IMAGE_MAX_MB = 8;
+const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const BANNER_MIN_WIDTH = 1600;
+const BANNER_MIN_HEIGHT = 600;
 
 export function ProductModal({ open, onClose, productId }: ProductModalProps) {
   const { products, addProduct, updateProduct } = useERP();
@@ -78,10 +83,17 @@ export function ProductModal({ open, onClose, productId }: ProductModalProps) {
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error('Imagem deve ter no maximo 5MB');
+      if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+        toast.error('Formato invalido. Use JPG, PNG ou WEBP');
         return;
       }
+
+      const maxMb = isBannerMode ? BANNER_IMAGE_MAX_MB : PRODUCT_IMAGE_MAX_MB;
+      if (file.size > maxMb * 1024 * 1024) {
+        toast.error(`Imagem deve ter no maximo ${maxMb}MB`);
+        return;
+      }
+
       const reader = new FileReader();
       reader.onload = () => {
         const result = typeof reader.result === 'string' ? reader.result : '';
@@ -89,6 +101,21 @@ export function ProductModal({ open, onClose, productId }: ProductModalProps) {
           toast.error('Nao foi possivel ler a imagem');
           return;
         }
+
+        if (isBannerMode) {
+          const image = new Image();
+          image.onload = () => {
+            if (image.width < BANNER_MIN_WIDTH || image.height < BANNER_MIN_HEIGHT) {
+              toast.error(`Banner precisa ter ao menos ${BANNER_MIN_WIDTH}x${BANNER_MIN_HEIGHT}px`);
+              return;
+            }
+            setActiveImageValue(result);
+          };
+          image.onerror = () => toast.error('Erro ao validar dimensoes do banner');
+          image.src = result;
+          return;
+        }
+
         setActiveImageValue(result);
       };
       reader.onerror = () => toast.error('Erro ao carregar imagem');
@@ -120,13 +147,13 @@ export function ProductModal({ open, onClose, productId }: ProductModalProps) {
       return;
     }
 
-    if (!formData.category && formData.localSpot !== 'novidades') {
+    if (!formData.category) {
       toast.error('Selecione uma categoria');
       setIsLoading(false);
       return;
     }
 
-    const normalizedCategory = (formData.category || 'acessorios') as Category;
+    const normalizedCategory = formData.category as Category;
 
     const productData = {
       name: formData.name.trim(),
@@ -211,7 +238,6 @@ export function ProductModal({ open, onClose, productId }: ProductModalProps) {
                   setFormData((prev) => ({
                     ...prev,
                     localSpot: value,
-                    category: value === 'novidades' ? (prev.category || 'acessorios') : prev.category,
                   }))
                 }
               >
@@ -228,28 +254,26 @@ export function ProductModal({ open, onClose, productId }: ProductModalProps) {
             </p>
           </div>
 
-          {formData.localSpot !== 'novidades' && (
-            <div className="space-y-2">
-              <Label htmlFor="category">Categoria</Label>
-              <Select
-                value={formData.category || undefined}
-                onValueChange={(value: Category) => setFormData((prev) => ({ ...prev, category: value }))}
-              >
-                <SelectTrigger><SelectValue placeholder="Selecione uma categoria" /></SelectTrigger>
-                <SelectContent>
-                  {categories.map((cat) => (
-                    <SelectItem key={cat} value={cat}>{CATEGORY_LABELS[cat]}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <div
-                className={cn(
-                  'h-1 rounded-full transition-colors',
-                  formData.category ? CATEGORY_COLORS[formData.category] : 'bg-muted'
-                )}
-              />
-            </div>
-          )}
+          <div className="space-y-2">
+            <Label htmlFor="category">Categoria</Label>
+            <Select
+              value={formData.category || undefined}
+              onValueChange={(value: Category) => setFormData((prev) => ({ ...prev, category: value }))}
+            >
+              <SelectTrigger><SelectValue placeholder="Selecione uma categoria" /></SelectTrigger>
+              <SelectContent>
+                {categories.map((cat) => (
+                  <SelectItem key={cat} value={cat}>{CATEGORY_LABELS[cat]}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <div
+              className={cn(
+                'h-1 rounded-full transition-colors',
+                formData.category ? CATEGORY_COLORS[formData.category] : 'bg-muted'
+              )}
+            />
+          </div>
 
             {/* Image - URL or Upload */}
             <div className="space-y-2">
@@ -263,7 +287,7 @@ export function ProductModal({ open, onClose, productId }: ProductModalProps) {
                   <input
                     ref={fileInputRef}
                     type="file"
-                    accept="image/*"
+                    accept=".jpg,.jpeg,.png,.webp"
                     className="hidden"
                     onChange={handleFileUpload}
                   />
@@ -310,6 +334,11 @@ export function ProductModal({ open, onClose, productId }: ProductModalProps) {
                   </Button>
                 </div>
               )}
+              <p className="text-xs text-muted-foreground">
+                {isBannerMode
+                  ? 'Banner da vitrine: JPG/PNG/WEBP, ate 8MB, minimo 1600x600px (recomendado 1920x720).'
+                  : 'Imagem do produto: JPG/PNG/WEBP, ate 5MB (recomendado 1200x1200).'}
+              </p>
             </div>
 
             <div className="flex items-center justify-between">

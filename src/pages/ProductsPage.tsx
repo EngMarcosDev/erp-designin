@@ -28,6 +28,7 @@ export default function ProdutosPage() {
   const { products, toggleProductStatus, deleteProduct } = useERP();
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<'active' | 'inactive' | 'all'>('active');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
   const [previewImage, setPreviewImage] = useState<{ url: string; name: string } | null>(null);
@@ -42,7 +43,9 @@ export default function ProdutosPage() {
     .filter((product) => {
       const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesCategory = categoryFilter === 'all' || product.category === categoryFilter;
-      return matchesSearch && matchesCategory;
+      const matchesStatus =
+        statusFilter === 'all' || (statusFilter === 'active' ? product.active : !product.active);
+      return matchesSearch && matchesCategory && matchesStatus;
     })
     .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
 
@@ -148,6 +151,16 @@ export default function ProdutosPage() {
                 {CATEGORY_LABELS[cat]}
               </SelectItem>
             ))}
+          </SelectContent>
+        </Select>
+        <Select value={statusFilter} onValueChange={(value: 'active' | 'inactive' | 'all') => setStatusFilter(value)}>
+          <SelectTrigger className="w-full sm:w-44">
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="active">Somente ativos</SelectItem>
+            <SelectItem value="inactive">Somente inativos</SelectItem>
+            <SelectItem value="all">Todos</SelectItem>
           </SelectContent>
         </Select>
       </div>
