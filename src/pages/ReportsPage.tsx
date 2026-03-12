@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   Package,
   Users,
@@ -52,6 +52,8 @@ export default function RelatoriosPage() {
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const [selectedReport, setSelectedReport] = useState<ReportType>('pedidos');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [brandFilter, setBrandFilter] = useState<string>('all');
+  const [materialFilter, setMaterialFilter] = useState<string>('all');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
 
@@ -82,6 +84,22 @@ export default function RelatoriosPage() {
     count: products.filter((p) => p.category === cat).length,
     stock: products.filter((p) => p.category === cat).reduce((sum, p) => sum + p.stock, 0),
   }));
+
+  const availableBrands = useMemo(
+    () =>
+      Array.from(new Set(products.map((product) => String(product.brand || "").trim()).filter(Boolean))).sort((a, b) =>
+        a.localeCompare(b, "pt-BR")
+      ),
+    [products]
+  );
+
+  const availableMaterials = useMemo(
+    () =>
+      Array.from(new Set(products.map((product) => String(product.material || "").trim()).filter(Boolean))).sort(
+        (a, b) => a.localeCompare(b, "pt-BR")
+      ),
+    [products]
+  );
 
   const reports = [
     {
@@ -140,9 +158,13 @@ export default function RelatoriosPage() {
       case 'produtos': {
         let filtered = [...products];
         if (categoryFilter !== 'all') filtered = filtered.filter(p => p.category === categoryFilter);
+        if (brandFilter !== 'all') filtered = filtered.filter(p => (p.brand || '').trim() === brandFilter);
+        if (materialFilter !== 'all') filtered = filtered.filter(p => (p.material || '').trim() === materialFilter);
         return filtered.sort((a, b) => a.name.localeCompare(b.name, 'pt-BR')).map(p => ({
           Nome: p.name,
           Categoria: CATEGORY_LABELS[p.category],
+          Marca: p.brand || '-',
+          Material: p.material || '-',
           'Preço (R$)': formatPrice(p.price, { includeCurrency: false, decimals: 2 }),
           Estoque: p.stock,
           Status: p.active ? 'Ativo' : 'Inativo',
@@ -151,9 +173,13 @@ export default function RelatoriosPage() {
       case 'estoque': {
         let filtered = [...products];
         if (categoryFilter !== 'all') filtered = filtered.filter(p => p.category === categoryFilter);
+        if (brandFilter !== 'all') filtered = filtered.filter(p => (p.brand || '').trim() === brandFilter);
+        if (materialFilter !== 'all') filtered = filtered.filter(p => (p.material || '').trim() === materialFilter);
         return filtered.sort((a, b) => a.name.localeCompare(b.name, 'pt-BR')).map(p => ({
           Produto: p.name,
           Categoria: CATEGORY_LABELS[p.category],
+          Marca: p.brand || '-',
+          Material: p.material || '-',
           'Qtd em Estoque': p.stock,
           Status: p.stock < 10 ? '⚠ Baixo' : 'OK',
           Ativo: p.active ? 'Sim' : 'Não',
@@ -248,6 +274,8 @@ export default function RelatoriosPage() {
   const openExportModal = (type: ReportType) => {
     setSelectedReport(type);
     setCategoryFilter('all');
+    setBrandFilter('all');
+    setMaterialFilter('all');
 
     if (type === 'pedidos' || type === 'mais_vendidos') {
       const now = new Date();
@@ -342,7 +370,7 @@ export default function RelatoriosPage() {
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground mb-4">
-            Exporte relatórios em PDF ou Excel com filtros por produto, categoria e período.
+            Exporte relatorios em PDF ou Excel com filtros por produto, categoria, marca, material e periodo.
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             {(Object.keys(REPORT_LABELS) as ReportType[]).map((type) => {
@@ -489,21 +517,57 @@ export default function RelatoriosPage() {
 
           <div className="space-y-4">
             {showCategoryFilter && (
-              <div className="space-y-2">
-                <Label>Categoria</Label>
-                <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Todas" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todas as categorias</SelectItem>
-                    {(Object.keys(CATEGORY_LABELS) as Category[]).map((cat) => (
-                      <SelectItem key={cat} value={cat}>
-                        {CATEGORY_LABELS[cat]}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div className="grid grid-cols-1 gap-3">
+                <div className="space-y-2">
+                  <Label>Categoria</Label>
+                  <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Todas" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todas as categorias</SelectItem>
+                      {(Object.keys(CATEGORY_LABELS) as Category[]).map((cat) => (
+                        <SelectItem key={cat} value={cat}>
+                          {CATEGORY_LABELS[cat]}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Marca</Label>
+                  <Select value={brandFilter} onValueChange={setBrandFilter}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Todas" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todas as marcas</SelectItem>
+                      {availableBrands.map((brand) => (
+                        <SelectItem key={brand} value={brand}>
+                          {brand}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Material</Label>
+                  <Select value={materialFilter} onValueChange={setMaterialFilter}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Todos" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos os materiais</SelectItem>
+                      {availableMaterials.map((material) => (
+                        <SelectItem key={material} value={material}>
+                          {material}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             )}
 
@@ -558,3 +622,5 @@ export default function RelatoriosPage() {
     </div>
   );
 }
+
+

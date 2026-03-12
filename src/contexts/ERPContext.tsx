@@ -149,20 +149,37 @@ export function ERPProvider({ children }: { children: ReactNode }) {
     return { isFeatured: false, isPopular: false };
   };
 
+  const normalizeCategoryValue = (value: unknown): Category => {
+    const normalized = String(value || "")
+      .trim()
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
+
+    if (normalized === "sedas") return "sedas";
+    if (normalized === "piteira" || normalized === "piteiras") return "piteira";
+    if (normalized === "fumigeno" || normalized === "fumigenos") return "fumigenos";
+    if (normalized === "cuia" || normalized === "cuias") return "cuia";
+    if (normalized === "bacakit" || normalized === "bacakits") return "bacakits";
+    if (normalized === "acessorio" || normalized === "acessorios") return "acessorios";
+    return "acessorios";
+  };
+
   // -------- Mapping helpers --------
   const mappedProducts: Product[] = useMemo(() => {
     const list = Array.isArray(productsQuery.data) ? productsQuery.data : [];
     return list.map((p) => {
-      const mappedCategory =
-        typeof p.category === "string"
-          ? (p.category as Category)
-          : ((p.category?.slug || p.category?.name || "acessorios") as Category);
+      const mappedCategory = normalizeCategoryValue(
+        typeof p.category === "string" ? p.category : p.category?.slug || p.category?.name || "acessorios"
+      );
       const mappedSpot = (p.isPopular ? "mais_vendidos" : p.isFeatured ? "novidades" : "categoria") as LocalSpot;
 
       return {
       // Accept either legacy string category or backend category object.
       // This prevents UI crashes when API payload shape changes.
       category: mappedCategory,
+      brand: typeof p.brand === "string" ? p.brand : undefined,
+      material: typeof p.material === "string" ? p.material : undefined,
       id: String(p.id),
       name: p.name,
       price: Number(p.price || 0),
@@ -269,6 +286,8 @@ export function ERPProvider({ children }: { children: ReactNode }) {
       name: product.name,
       price: product.price,
       category: product.category,
+      brand: product.brand,
+      material: product.material,
       stock: product.stock,
       image: product.image,
       bannerImage: product.banner,

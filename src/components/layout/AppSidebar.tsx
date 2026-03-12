@@ -50,7 +50,7 @@ export function AppSidebar() {
   const isCollapsed = state === "collapsed";
   const { user, logout, hasPermission } = useAuth();
   const navigate = useNavigate();
-  const headshopUrl = import.meta.env.VITE_HEADSHOP_URL || "http://localhost:8080";
+  const headshopUrl = import.meta.env.VITE_HEADSHOP_URL || "https://bacaxita.com.br";
 
   const visibleMenuItems = user?.active ? menuItems.filter((item) => hasPermission(item.permission)) : [];
 

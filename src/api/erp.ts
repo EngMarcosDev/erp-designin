@@ -9,8 +9,8 @@ export interface ErpProduct {
   stock: number;
   image: string;
   bannerImage?: string;
-  colors?: string;
-  materials?: string;
+  brand?: string;
+  material?: string;
   isNew?: boolean;
   isFeatured?: boolean;
   isPopular?: boolean;

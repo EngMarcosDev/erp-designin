@@ -26,6 +26,8 @@ export interface Product {
   name: string;
   price: number;
   category: Category;
+  brand?: string;
+  material?: string;
   stock: number;
   image?: string;
   banner?: string;
@@ -72,12 +74,12 @@ export interface StockComparison {
 }
 
 export const CATEGORY_LABELS: Record<Category, string> = {
-  bacakits: "BacaKits",
   sedas: "Sedas",
-  piteira: "Piteira",
-  cuia: "Cuia",
-  acessorios: "Acessórios",
-  fumigenos: "Fumígenos",
+  piteira: "Piteiras",
+  fumigenos: "Fumigenos",
+  cuia: "Cuias",
+  bacakits: "BacaKits",
+  acessorios: "Acessorios",
 };
 
 export const CATEGORY_COLORS: Record<Category, string> = {

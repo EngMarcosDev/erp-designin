@@ -1,22 +1,13 @@
-import {
-  Cigarette,
-  Coffee,
-  Filter,
-  LayoutGrid,
-  Scissors,
-  Package,
-  Flame,
-} from "lucide-react";
+import { Cigarette, Coffee, Filter, Flame, Package, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const categories = [
   { name: "Sedas", icon: Cigarette, href: "/categoria/sedas" },
-  { name: "Cuia", icon: Coffee, href: "/categoria/cuia" },
-  { name: "Piteira", icon: Filter, href: "/categoria/piteira" },
-  { name: "Bandeja", icon: LayoutGrid, href: "/categoria/bandeja" },
-  { name: "Tesoura", icon: Scissors, href: "/categoria/tesoura" },
+  { name: "Piteiras", icon: Filter, href: "/categoria/piteira" },
+  { name: "Fumigenos", icon: Flame, href: "/categoria/fumigenos" },
+  { name: "Cuias", icon: Coffee, href: "/categoria/cuia" },
   { name: "BacaKits", icon: Package, href: "/categoria/bacakits" },
-  { name: "Fumígenos", icon: Flame, href: "/categoria/fumigenos" },
+  { name: "Acessorios", icon: Sparkles, href: "/categoria/acessorios" },
 ];
 
 const CategoryNav = () => {
@@ -40,7 +31,6 @@ const CategoryNav = () => {
           ))}
         </div>
       </div>
-      {/* Divider */}
       <div className="max-w-4xl mx-auto mt-6 sm:mt-8">
         <div className="h-px bg-border/60" />
       </div>

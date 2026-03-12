@@ -47,6 +47,8 @@ export function ProductModal({ open, onClose, productId }: ProductModalProps) {
     name: '',
     price: '',
     category: '' as Category | '',
+    brand: '',
+    material: '',
     stock: '',
     image: '',
     banner: '',
@@ -63,6 +65,8 @@ export function ProductModal({ open, onClose, productId }: ProductModalProps) {
         name: existingProduct.name,
         price: existingProduct.price.toString(),
         category: existingProduct.category,
+        brand: existingProduct.brand || '',
+        material: existingProduct.material || '',
         stock: existingProduct.stock.toString(),
         image: existingProduct.image || '',
         banner: existingProduct.banner || '',
@@ -70,7 +74,18 @@ export function ProductModal({ open, onClose, productId }: ProductModalProps) {
         localSpot: existingProduct.localSpot || 'categoria',
       });
     } else {
-      setFormData({ name: '', price: '', category: '', stock: '', image: '', banner: '', active: true, localSpot: 'categoria' });
+      setFormData({
+        name: '',
+        price: '',
+        category: '',
+        brand: '',
+        material: '',
+        stock: '',
+        image: '',
+        banner: '',
+        active: true,
+        localSpot: 'categoria',
+      });
     }
   }, [existingProduct, open]);
 
@@ -159,6 +174,8 @@ export function ProductModal({ open, onClose, productId }: ProductModalProps) {
       name: formData.name.trim(),
       price,
       category: normalizedCategory,
+      brand: formData.brand.trim() || undefined,
+      material: formData.material.trim() || undefined,
       stock,
       image: isBannerMode ? undefined : formData.image.trim() || undefined,
       banner: isBannerMode ? activeImageValue.trim() || undefined : formData.banner.trim() || undefined,
@@ -225,6 +242,27 @@ export function ProductModal({ open, onClose, productId }: ProductModalProps) {
                   value={formData.stock}
                   onChange={(e) => setFormData((prev) => ({ ...prev, stock: e.target.value }))}
                   placeholder="0"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="brand">Marca</Label>
+                <Input
+                  id="brand"
+                  value={formData.brand}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, brand: e.target.value }))}
+                  placeholder="Ex: Bem Bolado"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="material">Material</Label>
+                <Input
+                  id="material"
+                  value={formData.material}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, material: e.target.value }))}
+                  placeholder="Ex: Papel, Madeira..."
                 />
               </div>
             </div>
