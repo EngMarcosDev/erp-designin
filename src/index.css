@@ -52,6 +52,7 @@
     --category-cuia: 27 59% 45%;
     --category-bacakits: 19 47% 42%;
     --category-acessorios: 199 36% 38%;
+    --category-fumigenos: 46 92% 66%;
     /* Status */
     --status-success: 133 55% 42%;
     --status-warning: 38 76% 54%;
@@ -235,6 +236,10 @@
   .category-cuia { background-color: hsl(var(--category-cuia)); }
   .category-bacakits { background-color: hsl(var(--category-bacakits)); }
   .category-acessorios { background-color: hsl(var(--category-acessorios)); }
+  .category-fumigenos {
+    background-color: hsl(var(--category-fumigenos));
+    color: hsl(30 40% 12%);
+  }
 
   /* Glass effect for dialogs */
   .dialog-overlay {
