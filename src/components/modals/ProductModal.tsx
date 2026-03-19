@@ -32,11 +32,7 @@ interface ProductModalProps {
 }
 
 const categories = Object.keys(CATEGORY_LABELS) as Category[];
-const PRODUCT_IMAGE_MAX_MB = 5;
-const BANNER_IMAGE_MAX_MB = 8;
 const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
-const BANNER_MIN_WIDTH = 1600;
-const BANNER_MIN_HEIGHT = 600;
 
 export function ProductModal({ open, onClose, productId, initialMode = 'product' }: ProductModalProps) {
   const { products, addProduct, updateProduct } = useERP();
@@ -105,31 +101,11 @@ export function ProductModal({ open, onClose, productId, initialMode = 'product'
         return;
       }
 
-      const maxMb = isBannerMode ? BANNER_IMAGE_MAX_MB : PRODUCT_IMAGE_MAX_MB;
-      if (file.size > maxMb * 1024 * 1024) {
-        toast.error(`Imagem deve ter no maximo ${maxMb}MB`);
-        return;
-      }
-
       const reader = new FileReader();
       reader.onload = () => {
         const result = typeof reader.result === 'string' ? reader.result : '';
         if (!result) {
           toast.error('Nao foi possivel ler a imagem');
-          return;
-        }
-
-        if (isBannerMode) {
-          const image = new Image();
-          image.onload = () => {
-            if (image.width < BANNER_MIN_WIDTH || image.height < BANNER_MIN_HEIGHT) {
-              toast.error(`Banner precisa ter ao menos ${BANNER_MIN_WIDTH}x${BANNER_MIN_HEIGHT}px`);
-              return;
-            }
-            setActiveImageValue(result);
-          };
-          image.onerror = () => toast.error('Erro ao validar dimensoes do banner');
-          image.src = result;
           return;
         }
 
@@ -397,8 +373,8 @@ export function ProductModal({ open, onClose, productId, initialMode = 'product'
               )}
               <p className="text-xs text-muted-foreground">
                 {isBannerMode
-                  ? 'Banner da vitrine: JPG/PNG/WEBP, ate 8MB, minimo 1600x600px (recomendado 1920x720).'
-                  : 'Imagem do produto: JPG/PNG/WEBP, ate 5MB (recomendado 1200x1200).'}
+                  ? 'Banner da vitrine: formato JPG/PNG/WEBP (recomendado 1920x720, ate 8MB).'
+                  : 'Imagem do produto: formato JPG/PNG/WEBP (recomendado 1200x1200, ate 5MB).'}
               </p>
             </div>
 

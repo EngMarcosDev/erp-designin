@@ -29,6 +29,8 @@ interface UserModalProps {
   userId: string | null;
 }
 
+const ALLOWED_AVATAR_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+
 export function UserModal({ open, onClose, userId }: UserModalProps) {
   const { users, addUser, updateUser } = useERP();
   const [isLoading, setIsLoading] = useState(false);
@@ -76,8 +78,8 @@ export function UserModal({ open, onClose, userId }: UserModalProps) {
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error('Imagem deve ter no máximo 5MB');
+      if (!ALLOWED_AVATAR_TYPES.includes(file.type)) {
+        toast.error('Formato invalido. Use JPG, PNG ou WEBP');
         return;
       }
       const reader = new FileReader();
@@ -180,7 +182,7 @@ export function UserModal({ open, onClose, userId }: UserModalProps) {
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/*"
+                accept=".jpg,.jpeg,.png,.webp"
                 className="hidden"
                 onChange={handleFileUpload}
               />
@@ -195,6 +197,9 @@ export function UserModal({ open, onClose, userId }: UserModalProps) {
               )}
             </div>
           </div>
+          <p className="text-xs text-muted-foreground">
+            Avatar: formato JPG/PNG/WEBP (recomendado 512x512, ate 2MB).
+          </p>
 
           <div className="space-y-2 pt-1">
             <Label htmlFor="name">Nome Completo</Label>
@@ -317,3 +322,4 @@ export function UserModal({ open, onClose, userId }: UserModalProps) {
     </Dialog>
   );
 }
+
