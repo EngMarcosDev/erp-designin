@@ -177,6 +177,11 @@ export function ERPProvider({ children }: { children: ReactNode }) {
   const mappedProducts: Product[] = useMemo(() => {
     const list = Array.isArray(productsQuery.data) ? productsQuery.data : [];
     return list.map((p) => {
+      const galleryList = Array.isArray((p as any).gallery)
+        ? (p as any).gallery.filter((entry: unknown) => typeof entry === "string" && String(entry).trim())
+        : [];
+      const primaryImage = p.image || p.imageUrl || galleryList[0] || "";
+      const normalizedGallery = Array.from(new Set([primaryImage, ...galleryList].filter(Boolean)));
       const mappedCategory = normalizeCategoryValue(
         typeof p.category === "string" ? p.category : p.category?.slug || p.category?.name || "acessorios"
       );
@@ -205,7 +210,8 @@ export function ERPProvider({ children }: { children: ReactNode }) {
       discountLabel: typeof p.discountLabel === "string" ? p.discountLabel : null,
       discountActive: p.discountActive === true,
       stock: Number(p.stock ?? p.stockQty ?? 0),
-      image: p.image || p.imageUrl || "",
+      image: primaryImage,
+      gallery: normalizedGallery,
       banner: p.bannerImage || "",
       active: (p.active ?? p.isActive) !== false,
       localSpot: mappedSpot,
@@ -316,6 +322,7 @@ export function ERPProvider({ children }: { children: ReactNode }) {
       material: product.material,
       stock: product.stock,
       image: product.image,
+      gallery: product.gallery,
       bannerImage: product.banner,
       active: product.active,
       ...flags,

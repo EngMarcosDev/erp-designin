@@ -1,152 +1,329 @@
-﻿import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from "react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useERP } from '@/contexts/ERPContext';
-import { Category, CATEGORY_COLORS, CATEGORY_LABELS, LocalSpot } from '@/types/erp';
-import { cn } from '@/lib/utils';
-import { toast } from 'sonner';
-import { ImageIcon, Eye, Upload } from 'lucide-react';
+} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { useERP } from "@/contexts/ERPContext";
+import { Category, CATEGORY_COLORS, CATEGORY_LABELS, LocalSpot } from "@/types/erp";
+import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+import { ImageIcon, Upload, Crop, Sparkles } from "lucide-react";
+import { Slider } from "@/components/ui/slider";
 
 interface ProductModalProps {
   open: boolean;
   onClose: () => void;
   productId: string | null;
-  initialMode?: 'product' | 'banner';
+  initialMode?: "product" | "banner";
 }
 
 const categories = Object.keys(CATEGORY_LABELS) as Category[];
 const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
-export function ProductModal({ open, onClose, productId, initialMode = 'product' }: ProductModalProps) {
+const dedupeImageList = (items: string[]) => Array.from(new Set(items.map((item) => item.trim()).filter(Boolean)));
+
+const readFileAsDataUrl = (file: File) =>
+  new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === "string" && reader.result.trim()) {
+        resolve(reader.result);
+      } else {
+        reject(new Error("Arquivo vazio"));
+      }
+    };
+    reader.onerror = () => reject(new Error("Falha ao ler imagem"));
+    reader.readAsDataURL(file);
+  });
+
+const loadImage = (src: string) =>
+  new Promise<HTMLImageElement>((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error("Falha ao carregar imagem para ajuste"));
+    image.src = src;
+  });
+
+const renderAdjustedImage = async (params: {
+  source: string;
+  zoom: number;
+  offsetX: number;
+  offsetY: number;
+  outputSize?: number;
+}) => {
+  const outputSize = params.outputSize ?? 1000;
+  const image = await loadImage(params.source);
+  const canvas = document.createElement("canvas");
+  canvas.width = outputSize;
+  canvas.height = outputSize;
+
+  const context = canvas.getContext("2d");
+  if (!context) {
+    throw new Error("Canvas indisponivel");
+  }
+
+  context.fillStyle = "#ffffff";
+  context.fillRect(0, 0, outputSize, outputSize);
+
+  const coverScale = Math.max(outputSize / image.width, outputSize / image.height);
+  const scaledWidth = image.width * coverScale * params.zoom;
+  const scaledHeight = image.height * coverScale * params.zoom;
+  const translateX = (params.offsetX / 100) * outputSize;
+  const translateY = (params.offsetY / 100) * outputSize;
+  const drawX = (outputSize - scaledWidth) / 2 + translateX;
+  const drawY = (outputSize - scaledHeight) / 2 + translateY;
+
+  context.drawImage(image, drawX, drawY, scaledWidth, scaledHeight);
+  return canvas.toDataURL("image/jpeg", 0.9);
+};
+
+export function ProductModal({ open, onClose, productId, initialMode = "product" }: ProductModalProps) {
   const { products, addProduct, updateProduct } = useERP();
   const [isLoading, setIsLoading] = useState(false);
-  const [previewOpen, setPreviewOpen] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const productInputRef = useRef<HTMLInputElement>(null);
+  const bannerInputRef = useRef<HTMLInputElement>(null);
+
+  const [galleryUrlInput, setGalleryUrlInput] = useState("");
+  const [bannerUrlInput, setBannerUrlInput] = useState("");
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [editorSource, setEditorSource] = useState("");
+  const [editorTarget, setEditorTarget] = useState<number | "banner" | null>(null);
+  const [editorZoom, setEditorZoom] = useState(1);
+  const [editorOffsetX, setEditorOffsetX] = useState(0);
+  const [editorOffsetY, setEditorOffsetY] = useState(0);
+  const [isApplyingAdjust, setIsApplyingAdjust] = useState(false);
 
   const [formData, setFormData] = useState({
-    name: '',
-    price: '',
-    category: '' as Category | '',
-    brand: '',
-    material: '',
-    stock: '',
-    image: '',
-    banner: '',
+    name: "",
+    price: "",
+    category: "" as Category | "",
+    brand: "",
+    material: "",
+    stock: "",
+    image: "",
+    gallery: [] as string[],
+    banner: "",
     active: true,
-    localSpot: 'categoria' as LocalSpot,
+    localSpot: "categoria" as LocalSpot,
   });
 
   const isEditing = productId !== null;
-  const isBannerIntent = !isEditing && initialMode === 'banner';
-  const existingProduct = productId ? products.find((p) => p.id === productId) : null;
+  const isBannerIntent = !isEditing && initialMode === "banner";
+  const existingProduct = productId ? products.find((product) => product.id === productId) : null;
 
   useEffect(() => {
     if (existingProduct) {
+      const normalizedGallery = dedupeImageList([existingProduct.image || "", ...(existingProduct.gallery || [])]);
       setFormData({
         name: existingProduct.name,
         price: existingProduct.price.toString(),
         category: existingProduct.category,
-        brand: existingProduct.brand || '',
-        material: existingProduct.material || '',
+        brand: existingProduct.brand || "",
+        material: existingProduct.material || "",
         stock: existingProduct.stock.toString(),
-        image: existingProduct.image || '',
-        banner: existingProduct.banner || '',
+        image: normalizedGallery[0] || existingProduct.image || "",
+        gallery: normalizedGallery,
+        banner: existingProduct.banner || "",
         active: existingProduct.active,
-        localSpot: existingProduct.localSpot || 'categoria',
+        localSpot: existingProduct.localSpot || "categoria",
       });
     } else {
       setFormData({
-        name: '',
-        price: isBannerIntent ? '0' : '',
-        category: isBannerIntent ? 'banners' : '',
-        brand: '',
-        material: '',
-        stock: isBannerIntent ? '0' : '',
-        image: '',
-        banner: '',
+        name: "",
+        price: isBannerIntent ? "0" : "",
+        category: isBannerIntent ? "banners" : "",
+        brand: "",
+        material: "",
+        stock: isBannerIntent ? "0" : "",
+        image: "",
+        gallery: [],
+        banner: "",
         active: true,
-        localSpot: isBannerIntent ? 'novidades' : 'categoria',
+        localSpot: isBannerIntent ? "novidades" : "categoria",
       });
     }
+
+    setGalleryUrlInput("");
+    setBannerUrlInput("");
+    setEditorOpen(false);
   }, [existingProduct, open, isBannerIntent]);
 
-  const isBannerMode = isBannerIntent || formData.localSpot === 'novidades' || formData.category === 'banners';
-  const activeImageValue = isBannerMode ? formData.banner : formData.image;
-  const setActiveImageValue = (value: string) => {
-    setFormData((prev) => (isBannerMode ? { ...prev, banner: value } : { ...prev, image: value }));
+  const isBannerMode = isBannerIntent || formData.localSpot === "novidades" || formData.category === "banners";
+
+  const openEditor = (target: number | "banner", source: string) => {
+    if (!source) return;
+    setEditorTarget(target);
+    setEditorSource(source);
+    setEditorZoom(1);
+    setEditorOffsetX(0);
+    setEditorOffsetY(0);
+    setEditorOpen(true);
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
-        toast.error('Formato invalido. Use JPG, PNG ou WEBP');
-        return;
-      }
-
-      const reader = new FileReader();
-      reader.onload = () => {
-        const result = typeof reader.result === 'string' ? reader.result : '';
-        if (!result) {
-          toast.error('Nao foi possivel ler a imagem');
-          return;
-        }
-
-        setActiveImageValue(result);
+  const addGalleryImages = (urls: string[]) => {
+    setFormData((previous) => {
+      const nextGallery = dedupeImageList([...previous.gallery, ...urls]);
+      return {
+        ...previous,
+        gallery: nextGallery,
+        image: nextGallery[0] || "",
       };
-      reader.onerror = () => toast.error('Erro ao carregar imagem');
-      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleProductFiles = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
+    event.target.value = "";
+    if (files.length === 0) return;
+
+    const invalidType = files.find((file) => !ALLOWED_IMAGE_TYPES.includes(file.type));
+    if (invalidType) {
+      toast.error("Formato invalido. Use JPG, PNG ou WEBP.");
+      return;
+    }
+
+    try {
+      const payload = await Promise.all(files.map((file) => readFileAsDataUrl(file)));
+      addGalleryImages(payload);
+      toast.success(`${payload.length} imagem(ns) adicionada(s).`);
+    } catch (error: any) {
+      toast.error(error?.message || "Falha ao processar imagens");
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleBannerFile = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+      toast.error("Formato invalido. Use JPG, PNG ou WEBP.");
+      return;
+    }
+
+    try {
+      const dataUrl = await readFileAsDataUrl(file);
+      setFormData((previous) => ({ ...previous, banner: dataUrl }));
+      toast.success("Banner carregado.");
+    } catch (error: any) {
+      toast.error(error?.message || "Falha ao carregar banner");
+    }
+  };
+
+  const addImageFromUrl = () => {
+    const nextUrl = galleryUrlInput.trim();
+    if (!nextUrl) return;
+    addGalleryImages([nextUrl]);
+    setGalleryUrlInput("");
+  };
+
+  const removeGalleryImage = (index: number) => {
+    setFormData((previous) => {
+      const nextGallery = previous.gallery.filter((_, itemIndex) => itemIndex !== index);
+      return {
+        ...previous,
+        gallery: nextGallery,
+        image: nextGallery[0] || "",
+      };
+    });
+  };
+
+  const setPrimaryImage = (index: number) => {
+    setFormData((previous) => {
+      const target = previous.gallery[index];
+      if (!target) return previous;
+      const rest = previous.gallery.filter((_, itemIndex) => itemIndex !== index);
+      const nextGallery = [target, ...rest];
+      return {
+        ...previous,
+        gallery: nextGallery,
+        image: nextGallery[0] || "",
+      };
+    });
+  };
+
+  const applyEditor = async () => {
+    if (!editorSource || editorTarget == null) return;
+    setIsApplyingAdjust(true);
+
+    try {
+      const adjustedImage = await renderAdjustedImage({
+        source: editorSource,
+        zoom: editorZoom,
+        offsetX: editorOffsetX,
+        offsetY: editorOffsetY,
+      });
+
+      if (editorTarget === "banner") {
+        setFormData((previous) => ({ ...previous, banner: adjustedImage }));
+      } else {
+        setFormData((previous) => {
+          const nextGallery = [...previous.gallery];
+          if (!nextGallery[editorTarget]) return previous;
+          nextGallery[editorTarget] = adjustedImage;
+          return {
+            ...previous,
+            gallery: nextGallery,
+            image: nextGallery[0] || "",
+          };
+        });
+      }
+
+      setEditorOpen(false);
+      toast.success("Imagem ajustada com sucesso.");
+    } catch (error: any) {
+      toast.error(error?.message || "Falha ao aplicar ajuste da imagem");
+    } finally {
+      setIsApplyingAdjust(false);
+    }
+  };
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
     setIsLoading(true);
 
     if (!formData.name.trim()) {
-      toast.error('Nome do produto e obrigatorio');
+      toast.error("Nome do produto e obrigatorio");
       setIsLoading(false);
       return;
     }
 
-    const price = parseFloat(isBannerMode ? formData.price || '0' : formData.price);
-    if (isNaN(price) || price < 0) {
-      toast.error('Preco invalido');
+    const price = parseFloat(isBannerMode ? formData.price || "0" : formData.price);
+    if (Number.isNaN(price) || price < 0) {
+      toast.error("Preco invalido");
       setIsLoading(false);
       return;
     }
 
-    const stock = parseInt(isBannerMode ? formData.stock || '0' : formData.stock);
-    if (isNaN(stock) || stock < 0) {
-      toast.error('Estoque inválido');
+    const stock = parseInt(isBannerMode ? formData.stock || "0" : formData.stock, 10);
+    if (Number.isNaN(stock) || stock < 0) {
+      toast.error("Estoque invalido");
       setIsLoading(false);
       return;
     }
 
     if (!isBannerMode && !formData.category) {
-      toast.error('Selecione uma categoria');
+      toast.error("Selecione uma categoria");
       setIsLoading(false);
       return;
     }
 
-    const normalizedCategory = (isBannerMode ? 'banners' : formData.category) as Category;
+    const normalizedCategory = (isBannerMode ? "banners" : formData.category) as Category;
+    const normalizedGallery = dedupeImageList(formData.gallery);
 
     const productData = {
       name: formData.name.trim(),
@@ -155,23 +332,24 @@ export function ProductModal({ open, onClose, productId, initialMode = 'product'
       brand: formData.brand.trim() || undefined,
       material: formData.material.trim() || undefined,
       stock,
-      image: isBannerMode ? undefined : formData.image.trim() || undefined,
-      banner: isBannerMode ? activeImageValue.trim() || undefined : formData.banner.trim() || undefined,
+      image: isBannerMode ? undefined : normalizedGallery[0] || undefined,
+      gallery: isBannerMode ? undefined : normalizedGallery,
+      banner: isBannerMode ? formData.banner.trim() || undefined : undefined,
       active: formData.active,
-      localSpot: isBannerMode ? 'novidades' : formData.localSpot,
+      localSpot: isBannerMode ? "novidades" : formData.localSpot,
     };
 
     try {
       if (isEditing && productId) {
         await updateProduct(productId, productData);
-        toast.success('Produto atualizado com sucesso!');
+        toast.success("Produto atualizado com sucesso!");
       } else {
         await addProduct(productData);
-        toast.success('Produto cadastrado com sucesso!');
+        toast.success("Produto cadastrado com sucesso!");
       }
       onClose();
-    } catch (err: any) {
-      toast.error(err?.message || 'Erro ao salvar produto');
+    } catch (error: any) {
+      toast.error(error?.message || "Erro ao salvar produto");
     } finally {
       setIsLoading(false);
     }
@@ -180,11 +358,9 @@ export function ProductModal({ open, onClose, productId, initialMode = 'product'
   return (
     <>
       <Dialog open={open} onOpenChange={onClose}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-2xl">
           <DialogHeader className="dialog-titlebar -mx-6 -mt-6 px-6 pt-6 pb-4 rounded-t-lg">
-            <DialogTitle>
-              {isEditing ? 'Editar Produto' : isBannerIntent ? 'Novo Banner' : 'Novo Produto'}
-            </DialogTitle>
+            <DialogTitle>{isEditing ? "Editar Produto" : isBannerIntent ? "Novo Banner" : "Novo Produto"}</DialogTitle>
           </DialogHeader>
 
           <form onSubmit={handleSubmit} className="space-y-4 pt-2">
@@ -193,7 +369,7 @@ export function ProductModal({ open, onClose, productId, initialMode = 'product'
               <Input
                 id="name"
                 value={formData.name}
-                onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
+                onChange={(event) => setFormData((previous) => ({ ...previous, name: event.target.value }))}
                 placeholder="Ex: Seda Premium"
               />
             </div>
@@ -209,7 +385,7 @@ export function ProductModal({ open, onClose, productId, initialMode = 'product'
                       step="0.01"
                       min="0"
                       value={formData.price}
-                      onChange={(e) => setFormData((prev) => ({ ...prev, price: e.target.value }))}
+                      onChange={(event) => setFormData((previous) => ({ ...previous, price: event.target.value }))}
                       placeholder="0.00"
                     />
                   </div>
@@ -220,7 +396,7 @@ export function ProductModal({ open, onClose, productId, initialMode = 'product'
                       type="number"
                       min="0"
                       value={formData.stock}
-                      onChange={(e) => setFormData((prev) => ({ ...prev, stock: e.target.value }))}
+                      onChange={(event) => setFormData((previous) => ({ ...previous, stock: event.target.value }))}
                       placeholder="0"
                     />
                   </div>
@@ -232,7 +408,7 @@ export function ProductModal({ open, onClose, productId, initialMode = 'product'
                     <Input
                       id="brand"
                       value={formData.brand}
-                      onChange={(e) => setFormData((prev) => ({ ...prev, brand: e.target.value }))}
+                      onChange={(event) => setFormData((previous) => ({ ...previous, brand: event.target.value }))}
                       placeholder="Ex: Bem Bolado"
                     />
                   </div>
@@ -241,7 +417,7 @@ export function ProductModal({ open, onClose, productId, initialMode = 'product'
                     <Input
                       id="material"
                       value={formData.material}
-                      onChange={(e) => setFormData((prev) => ({ ...prev, material: e.target.value }))}
+                      onChange={(event) => setFormData((previous) => ({ ...previous, material: event.target.value }))}
                       placeholder="Ex: Papel, Madeira..."
                     />
                   </div>
@@ -249,134 +425,234 @@ export function ProductModal({ open, onClose, productId, initialMode = 'product'
               </>
             )}
 
-          {!isBannerIntent && (
-            <div className="space-y-2">
-              <Label>Local</Label>
-              <div className="grid grid-cols-1 gap-3">
+            {!isBannerIntent && (
+              <div className="space-y-2">
+                <Label>Local</Label>
                 <Select
                   value={formData.localSpot}
-                  onValueChange={(value: LocalSpot) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      localSpot: value,
-                    }))
-                  }
+                  onValueChange={(value: LocalSpot) => setFormData((previous) => ({ ...previous, localSpot: value }))}
                 >
-                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="categoria">Categoria (padrao)</SelectItem>
                     <SelectItem value="novidades">Novidades (vitrine)</SelectItem>
                     <SelectItem value="mais_vendidos">Mais vendidos</SelectItem>
                   </SelectContent>
                 </Select>
+                <p className="text-xs text-muted-foreground">
+                  Defina em qual vitrine da Home esse produto deve aparecer.
+                </p>
               </div>
-              <p className="text-xs text-muted-foreground">
-                Defina em qual vitrine da Home esse produto deve aparecer.
-              </p>
-            </div>
-          )}
-          {isBannerIntent && (
-            <p className="text-xs text-muted-foreground">
-              Este cadastro sera salvo como banner de novidades.
-            </p>
-          )}
+            )}
 
-          {isBannerIntent ? (
-            <div className="space-y-2">
-              <Label>Categoria</Label>
-              <div className="rounded-md border border-border bg-muted/40 px-3 py-2 text-sm text-foreground">
-                {CATEGORY_LABELS.banners}
+            {isBannerIntent && (
+              <p className="text-xs text-muted-foreground">Este cadastro sera salvo como banner de novidades.</p>
+            )}
+
+            {isBannerIntent ? (
+              <div className="space-y-2">
+                <Label>Categoria</Label>
+                <div className="rounded-md border border-border bg-muted/40 px-3 py-2 text-sm text-foreground">
+                  {CATEGORY_LABELS.banners}
+                </div>
+                <div className="h-1 rounded-full bg-amber-600/80" />
               </div>
-              <div className="h-1 rounded-full bg-amber-600/80" />
-            </div>
-          ) : (
-            <div className="space-y-2">
-              <Label htmlFor="category">Categoria</Label>
-              <Select
-                value={formData.category || undefined}
-                onValueChange={(value: Category) => setFormData((prev) => ({ ...prev, category: value }))}
-              >
-                <SelectTrigger><SelectValue placeholder="Selecione uma categoria" /></SelectTrigger>
-                <SelectContent>
-                  {categories.filter((cat) => cat !== 'banners').map((cat) => (
-                    <SelectItem key={cat} value={cat}>{CATEGORY_LABELS[cat]}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <div
-                className={cn(
-                  'h-1 rounded-full transition-colors',
-                  formData.category ? CATEGORY_COLORS[formData.category] : 'bg-muted'
-                )}
-              />
-            </div>
-          )}
+            ) : (
+              <div className="space-y-2">
+                <Label htmlFor="category">Categoria</Label>
+                <Select
+                  value={formData.category || undefined}
+                  onValueChange={(value: Category) => setFormData((previous) => ({ ...previous, category: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione uma categoria" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories
+                      .filter((category) => category !== "banners")
+                      .map((category) => (
+                        <SelectItem key={category} value={category}>
+                          {CATEGORY_LABELS[category]}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+                <div
+                  className={cn(
+                    "h-1 rounded-full transition-colors",
+                    formData.category ? CATEGORY_COLORS[formData.category] : "bg-muted"
+                  )}
+                />
+              </div>
+            )}
 
-            {/* Image - URL or Upload */}
-            <div className="space-y-2">
-              <Label>{isBannerMode ? 'Banner principal (novidades)' : 'Imagem do produto'}</Label>
-              <Tabs defaultValue="upload" className="w-full">
-                <TabsList className="w-full">
-                  <TabsTrigger value="upload" className="flex-1 gap-1"><Upload className="h-3 w-3" /> Upload</TabsTrigger>
-                  <TabsTrigger value="url" className="flex-1 gap-1"><ImageIcon className="h-3 w-3" /> URL</TabsTrigger>
-                </TabsList>
-                <TabsContent value="upload" className="mt-2">
+            {isBannerMode ? (
+              <div className="space-y-2">
+                <Label>Banner principal (novidades)</Label>
+
+                <div className="flex flex-wrap gap-2">
                   <input
-                    ref={fileInputRef}
+                    ref={bannerInputRef}
                     type="file"
                     accept=".jpg,.jpeg,.png,.webp"
                     className="hidden"
-                    onChange={handleFileUpload}
+                    onChange={handleBannerFile}
                   />
-                  <Button type="button" variant="outline" className="w-full gap-2" onClick={() => fileInputRef.current?.click()}>
+                  <Button type="button" variant="outline" className="gap-2" onClick={() => bannerInputRef.current?.click()}>
                     <Upload className="h-4 w-4" />
-                    Selecionar Imagem
+                    Upload
                   </Button>
-                </TabsContent>
-                <TabsContent value="url" className="mt-2">
-                  <div className="flex gap-2">
-                    <div className="relative flex-1">
-                      <ImageIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        value={activeImageValue}
-                        onChange={(e) => setActiveImageValue(e.target.value)}
-                        placeholder="https://exemplo.com/imagem.jpg"
-                        className="pl-10"
-                      />
-                    </div>
-                    {activeImageValue && (
-                      <Button type="button" variant="outline" size="icon" onClick={() => setPreviewOpen(true)} title="Visualizar">
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-                </TabsContent>
-              </Tabs>
-              {activeImageValue && (
-                <div className="mt-2 rounded-lg overflow-hidden border bg-muted/30 h-24 flex items-center justify-center relative">
-                  <img
-                    src={activeImageValue}
-                    alt="Preview"
-                    className="max-h-full max-w-full object-contain"
-                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                  />
                   <Button
                     type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="absolute top-1 right-1 text-xs text-destructive h-6"
-                    onClick={() => setActiveImageValue('')}
+                    variant="outline"
+                    className="gap-2"
+                    disabled={!formData.banner}
+                    onClick={() => openEditor("banner", formData.banner)}
                   >
-                    Remover
+                    <Crop className="h-4 w-4" />
+                    Ajustar
                   </Button>
                 </div>
-              )}
-              <p className="text-xs text-muted-foreground">
-                {isBannerMode
-                  ? 'Banner da vitrine: formato JPG/PNG/WEBP (recomendado 1920x720, ate 8MB).'
-                  : 'Imagem do produto: formato JPG/PNG/WEBP (recomendado 1200x1200, ate 5MB).'}
-              </p>
-            </div>
+
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <ImageIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      value={bannerUrlInput}
+                      onChange={(event) => setBannerUrlInput(event.target.value)}
+                      placeholder="https://exemplo.com/banner.jpg"
+                      className="pl-10"
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      const nextValue = bannerUrlInput.trim();
+                      if (!nextValue) return;
+                      setFormData((previous) => ({ ...previous, banner: nextValue }));
+                      setBannerUrlInput("");
+                    }}
+                  >
+                    Adicionar URL
+                  </Button>
+                </div>
+
+                {formData.banner ? (
+                  <div className="mt-2 rounded-lg overflow-hidden border bg-muted/30 h-24 flex items-center justify-center relative">
+                    <img src={formData.banner} alt="Preview do banner" className="max-h-full max-w-full object-contain" />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute top-1 right-1 text-xs text-destructive h-6"
+                      onClick={() => setFormData((previous) => ({ ...previous, banner: "" }))}
+                    >
+                      Remover
+                    </Button>
+                  </div>
+                ) : null}
+
+                <p className="text-xs text-muted-foreground">
+                  Recomendado: 1920x720 e ate 8MB. Upload nao sera bloqueado por tamanho/peso.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Label>Galeria de imagens do produto</Label>
+
+                <div className="flex flex-wrap gap-2">
+                  <input
+                    ref={productInputRef}
+                    type="file"
+                    multiple
+                    accept=".jpg,.jpeg,.png,.webp"
+                    className="hidden"
+                    onChange={handleProductFiles}
+                  />
+                  <Button type="button" variant="outline" className="gap-2" onClick={() => productInputRef.current?.click()}>
+                    <Upload className="h-4 w-4" />
+                    Adicionar imagens
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="gap-2"
+                    disabled={formData.gallery.length === 0}
+                    onClick={() => openEditor(0, formData.gallery[0])}
+                  >
+                    <Sparkles className="h-4 w-4" />
+                    Ajustar principal
+                  </Button>
+                </div>
+
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <ImageIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      value={galleryUrlInput}
+                      onChange={(event) => setGalleryUrlInput(event.target.value)}
+                      placeholder="https://exemplo.com/produto.jpg"
+                      className="pl-10"
+                    />
+                  </div>
+                  <Button type="button" variant="outline" onClick={addImageFromUrl}>
+                    Adicionar URL
+                  </Button>
+                </div>
+
+                {formData.gallery.length > 0 ? (
+                  <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
+                    {formData.gallery.map((image, index) => (
+                      <div key={`${image}-${index}`} className="rounded-lg border border-border bg-muted/30 p-2 space-y-2">
+                        <div className="h-24 overflow-hidden rounded-md bg-white/80">
+                          <img src={image} alt={`Imagem ${index + 1}`} className="h-full w-full object-cover" />
+                        </div>
+                        <div className="flex flex-wrap gap-1">
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant={index === 0 ? "default" : "outline"}
+                            className="h-7 px-2 text-[11px]"
+                            onClick={() => setPrimaryImage(index)}
+                          >
+                            {index === 0 ? "Principal" : "Tornar principal"}
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            className="h-7 px-2 text-[11px]"
+                            onClick={() => openEditor(index, image)}
+                          >
+                            Ajustar
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 px-2 text-[11px] text-destructive"
+                            onClick={() => removeGalleryImage(index)}
+                          >
+                            Remover
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="rounded-lg border border-dashed border-border p-4 text-xs text-muted-foreground">
+                    Nenhuma imagem adicionada ainda.
+                  </div>
+                )}
+
+                <p className="text-xs text-muted-foreground">
+                  Recomendado: 1200x1200 e ate 5MB por imagem. Upload nao sera bloqueado por tamanho/peso.
+                </p>
+              </div>
+            )}
 
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
@@ -386,37 +662,93 @@ export function ProductModal({ open, onClose, productId, initialMode = 'product'
               <Switch
                 id="active"
                 checked={formData.active}
-                onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, active: checked }))}
+                onCheckedChange={(checked) => setFormData((previous) => ({ ...previous, active: checked }))}
               />
             </div>
 
             <DialogFooter className="gap-2 sm:gap-0">
-              <Button type="button" variant="outline" onClick={onClose}>Cancelar</Button>
+              <Button type="button" variant="outline" onClick={onClose}>
+                Cancelar
+              </Button>
               <Button type="submit" disabled={isLoading}>
-                {isLoading ? 'Salvando...' : 'Salvar'}
+                {isLoading ? "Salvando..." : "Salvar"}
               </Button>
             </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
 
-      {/* Image Preview Modal */}
-      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
-        <DialogContent className="sm:max-w-lg">
+      <Dialog open={editorOpen} onOpenChange={setEditorOpen}>
+        <DialogContent className="sm:max-w-xl">
           <DialogHeader className="dialog-titlebar -mx-6 -mt-6 px-6 pt-6 pb-4 rounded-t-lg">
-            <DialogTitle>Preview da Imagem</DialogTitle>
+            <DialogTitle>Ajustar Imagem</DialogTitle>
           </DialogHeader>
-          <div className="flex items-center justify-center p-4 bg-muted/30 rounded-lg min-h-[300px]">
-            {activeImageValue ? (
-              <img src={activeImageValue} alt="Preview do produto" className="max-w-full max-h-[400px] object-contain rounded" onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder.svg'; }} />
-            ) : (
-              <p className="text-muted-foreground">Nenhuma imagem informada</p>
-            )}
+
+          <div className="space-y-4 pt-2">
+            <div className="mx-auto h-72 w-72 overflow-hidden rounded-xl border border-border bg-muted/30">
+              {editorSource ? (
+                <img
+                  src={editorSource}
+                  alt="Editor"
+                  className="h-full w-full object-cover transition-transform duration-75"
+                  style={{
+                    transform: `translate(${editorOffsetX}%, ${editorOffsetY}%) scale(${editorZoom})`,
+                    transformOrigin: "center",
+                  }}
+                />
+              ) : null}
+            </div>
+
+            <div className="space-y-3">
+              <div className="space-y-2">
+                <Label>Zoom</Label>
+                <Slider
+                  value={[editorZoom]}
+                  min={1}
+                  max={3}
+                  step={0.05}
+                  onValueChange={(value) => setEditorZoom(value[0] || 1)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Centralizacao horizontal</Label>
+                <Slider
+                  value={[editorOffsetX]}
+                  min={-45}
+                  max={45}
+                  step={1}
+                  onValueChange={(value) => setEditorOffsetX(value[0] || 0)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Centralizacao vertical</Label>
+                <Slider
+                  value={[editorOffsetY]}
+                  min={-45}
+                  max={45}
+                  step={1}
+                  onValueChange={(value) => setEditorOffsetY(value[0] || 0)}
+                />
+              </div>
+            </div>
+
+            <p className="text-xs text-muted-foreground">
+              O ajuste aplica corte quadrado com preview em tempo real antes de salvar.
+            </p>
           </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button type="button" variant="outline" onClick={() => setEditorOpen(false)}>
+              Cancelar
+            </Button>
+            <Button type="button" onClick={applyEditor} disabled={isApplyingAdjust}>
+              {isApplyingAdjust ? "Aplicando..." : "Aplicar ajuste"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </>
   );
 }
-
-

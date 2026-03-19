@@ -4,11 +4,17 @@ export interface ErpProduct {
   id: number;
   name: string;
   price: number;
+  originalPrice?: number;
+  discountPercent?: number;
+  discountAmount?: number;
+  discountLabel?: string;
+  discountActive?: boolean;
   category: string;
   active: boolean;
   stock: number;
   image: string;
   bannerImage?: string;
+  gallery?: string[];
   brand?: string;
   material?: string;
   isNew?: boolean;

@@ -1,5 +1,5 @@
 ﻿import { useMemo, useState } from 'react';
-import { Plus, Search, Package, Edit, Power, Eye, Trash2, ImageOff, ImagePlus, BadgePercent } from 'lucide-react';
+import { Plus, Search, Package, Edit, Eye, Trash2, ImageOff, ImagePlus, BadgePercent } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,6 +18,7 @@ import { ProductModal } from '@/components/modals/ProductModal';
 import { DiscountModal } from '@/components/modals/DiscountModal';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { Switch } from '@/components/ui/switch';
 import {
   Dialog,
   DialogContent,
@@ -295,13 +296,14 @@ export default function ProdutosPage() {
                     <Button variant="outline" size="icon" onClick={() => handleEdit(product.id)}>
                       <Edit className="h-4 w-4" />
                     </Button>
-                    <Button
-                      variant={product.active ? 'destructive' : 'default'}
-                      size="icon"
-                      onClick={() => handleToggleStatus(product.id, product.name, product.active)}
-                    >
-                      <Power className="h-4 w-4" />
-                    </Button>
+                    <div className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-2 py-1">
+                      <span className="text-[11px] text-muted-foreground">{product.active ? 'Ativo' : 'Inativo'}</span>
+                      <Switch
+                        checked={product.active}
+                        onCheckedChange={() => handleToggleStatus(product.id, product.name, product.active)}
+                        aria-label={product.active ? 'Desativar produto' : 'Ativar produto'}
+                      />
+                    </div>
                     <Button
                       variant="outline"
                       size="icon"
@@ -414,13 +416,14 @@ export default function ProdutosPage() {
                     <Edit className="h-4 w-4 mr-1" />
                     Editar
                   </Button>
-                  <Button
-                    variant={product.active ? 'destructive' : 'default'}
-                    size="sm"
-                    onClick={() => handleToggleStatus(product.id, product.name, product.active)}
-                  >
-                    <Power className="h-4 w-4" />
-                  </Button>
+                  <div className="inline-flex items-center gap-2 rounded-md border border-border bg-background px-2">
+                    <span className="text-[11px] text-muted-foreground">{product.active ? 'Ativo' : 'Inativo'}</span>
+                    <Switch
+                      checked={product.active}
+                      onCheckedChange={() => handleToggleStatus(product.id, product.name, product.active)}
+                      aria-label={product.active ? 'Desativar produto' : 'Ativar produto'}
+                    />
+                  </div>
                   <Button
                     variant="outline"
                     size="sm"

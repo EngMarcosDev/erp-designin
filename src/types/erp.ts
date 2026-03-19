@@ -37,6 +37,7 @@ export interface Product {
   material?: string;
   stock: number;
   image?: string;
+  gallery?: string[];
   banner?: string;
   active: boolean;
   localSpot?: LocalSpot;

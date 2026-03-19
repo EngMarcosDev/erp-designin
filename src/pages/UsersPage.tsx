@@ -1,5 +1,5 @@
 ﻿import { useState } from 'react';
-import { Plus, Search, Users as UsersIcon, Edit, Power, Shield, User, Settings, Key, Eye, EyeOff, Trash2 } from 'lucide-react';
+import { Plus, Search, Users as UsersIcon, Edit, Shield, User, Settings, Key, Eye, EyeOff, Trash2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -259,10 +259,10 @@ export default function UsuariosPage() {
               <div className="flex gap-2">
                 <Badge variant="secondary" className="py-1.5">{selectedIds.length} selecionado(s)</Badge>
                 <Button variant="destructive" size="sm" onClick={handleBatchDeactivate}>
-                  <Power className="h-4 w-4 mr-1" /> Desativar
+                  Definir como inativo
                 </Button>
                 <Button variant="default" size="sm" onClick={handleBatchActivate}>
-                  <Power className="h-4 w-4 mr-1" /> Ativar
+                  Definir como ativo
                 </Button>
               </div>
             )}
@@ -351,14 +351,14 @@ export default function UsuariosPage() {
                             <Button variant="outline" size="sm" onClick={() => handleEdit(user.id)} title="Editar">
                               <Edit className="h-4 w-4" />
                             </Button>
-                            <Button
-                              variant={user.active ? 'destructive' : 'default'}
-                              size="sm"
-                              onClick={() => handleToggleStatus(user.id, user.name, user.active)}
-                              title={user.active ? 'Desativar' : 'Ativar'}
-                          >
-                            <Power className="h-4 w-4" />
-                          </Button>
+                            <div className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-2">
+                              <span className="text-[11px] text-muted-foreground">{user.active ? 'Ativo' : 'Inativo'}</span>
+                              <Switch
+                                checked={user.active}
+                                onCheckedChange={() => handleToggleStatus(user.id, user.name, user.active)}
+                                aria-label={user.active ? 'Desativar usuario' : 'Ativar usuario'}
+                              />
+                            </div>
                           <Button
                             variant="outline"
                             size="sm"
