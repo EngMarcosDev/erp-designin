@@ -160,8 +160,16 @@ export function ERPProvider({ children }: { children: ReactNode }) {
     if (normalized === "piteira" || normalized === "piteiras") return "piteira";
     if (normalized === "fumigeno" || normalized === "fumigenos") return "fumigenos";
     if (normalized === "cuia" || normalized === "cuias") return "cuia";
-    if (normalized === "bacakit" || normalized === "bacakits") return "bacakits";
+    if (
+      normalized === "bacakit" ||
+      normalized === "bacakits" ||
+      normalized === "abacakit" ||
+      normalized === "abacakits"
+    ) {
+      return "bacakits";
+    }
     if (normalized === "acessorio" || normalized === "acessorios") return "acessorios";
+    if (normalized === "banner" || normalized === "banners") return "banners";
     return "acessorios";
   };
 
@@ -172,7 +180,15 @@ export function ERPProvider({ children }: { children: ReactNode }) {
       const mappedCategory = normalizeCategoryValue(
         typeof p.category === "string" ? p.category : p.category?.slug || p.category?.name || "acessorios"
       );
-      const mappedSpot = (p.isPopular ? "mais_vendidos" : p.isFeatured ? "novidades" : "categoria") as LocalSpot;
+      const mappedSpot = (
+        mappedCategory === "banners"
+          ? "novidades"
+          : p.isPopular
+            ? "mais_vendidos"
+            : p.isFeatured
+              ? "novidades"
+              : "categoria"
+      ) as LocalSpot;
 
       return {
       // Accept either legacy string category or backend category object.
@@ -183,6 +199,11 @@ export function ERPProvider({ children }: { children: ReactNode }) {
       id: String(p.id),
       name: p.name,
       price: Number(p.price || 0),
+      originalPrice: p.originalPrice != null ? Number(p.originalPrice) : null,
+      discountPercent: p.discountPercent != null ? Number(p.discountPercent) : null,
+      discountAmount: p.discountAmount != null ? Number(p.discountAmount) : null,
+      discountLabel: typeof p.discountLabel === "string" ? p.discountLabel : null,
+      discountActive: p.discountActive === true,
       stock: Number(p.stock ?? p.stockQty ?? 0),
       image: p.image || p.imageUrl || "",
       banner: p.bannerImage || "",
@@ -285,6 +306,11 @@ export function ERPProvider({ children }: { children: ReactNode }) {
     await createProductMut.mutateAsync({
       name: product.name,
       price: product.price,
+      originalPrice: product.originalPrice ?? null,
+      discountPercent: product.discountPercent ?? null,
+      discountAmount: product.discountAmount ?? null,
+      discountLabel: product.discountLabel ?? null,
+      discountActive: product.discountActive ?? false,
       category: product.category,
       brand: product.brand,
       material: product.material,

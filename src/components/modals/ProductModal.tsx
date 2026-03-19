@@ -28,6 +28,7 @@ interface ProductModalProps {
   open: boolean;
   onClose: () => void;
   productId: string | null;
+  initialMode?: 'product' | 'banner';
 }
 
 const categories = Object.keys(CATEGORY_LABELS) as Category[];
@@ -37,7 +38,7 @@ const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const BANNER_MIN_WIDTH = 1600;
 const BANNER_MIN_HEIGHT = 600;
 
-export function ProductModal({ open, onClose, productId }: ProductModalProps) {
+export function ProductModal({ open, onClose, productId, initialMode = 'product' }: ProductModalProps) {
   const { products, addProduct, updateProduct } = useERP();
   const [isLoading, setIsLoading] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -57,6 +58,7 @@ export function ProductModal({ open, onClose, productId }: ProductModalProps) {
   });
 
   const isEditing = productId !== null;
+  const isBannerIntent = !isEditing && initialMode === 'banner';
   const existingProduct = productId ? products.find((p) => p.id === productId) : null;
 
   useEffect(() => {
@@ -76,20 +78,20 @@ export function ProductModal({ open, onClose, productId }: ProductModalProps) {
     } else {
       setFormData({
         name: '',
-        price: '',
-        category: '',
+        price: isBannerIntent ? '0' : '',
+        category: isBannerIntent ? 'banners' : '',
         brand: '',
         material: '',
-        stock: '',
+        stock: isBannerIntent ? '0' : '',
         image: '',
         banner: '',
         active: true,
-        localSpot: 'categoria',
+        localSpot: isBannerIntent ? 'novidades' : 'categoria',
       });
     }
-  }, [existingProduct, open]);
+  }, [existingProduct, open, isBannerIntent]);
 
-  const isBannerMode = formData.localSpot === 'novidades';
+  const isBannerMode = isBannerIntent || formData.localSpot === 'novidades' || formData.category === 'banners';
   const activeImageValue = isBannerMode ? formData.banner : formData.image;
   const setActiveImageValue = (value: string) => {
     setFormData((prev) => (isBannerMode ? { ...prev, banner: value } : { ...prev, image: value }));
@@ -148,27 +150,27 @@ export function ProductModal({ open, onClose, productId }: ProductModalProps) {
       return;
     }
 
-    const price = parseFloat(formData.price);
+    const price = parseFloat(isBannerMode ? formData.price || '0' : formData.price);
     if (isNaN(price) || price < 0) {
       toast.error('Preco invalido');
       setIsLoading(false);
       return;
     }
 
-    const stock = parseInt(formData.stock);
+    const stock = parseInt(isBannerMode ? formData.stock || '0' : formData.stock);
     if (isNaN(stock) || stock < 0) {
       toast.error('Estoque inválido');
       setIsLoading(false);
       return;
     }
 
-    if (!formData.category) {
+    if (!isBannerMode && !formData.category) {
       toast.error('Selecione uma categoria');
       setIsLoading(false);
       return;
     }
 
-    const normalizedCategory = formData.category as Category;
+    const normalizedCategory = (isBannerMode ? 'banners' : formData.category) as Category;
 
     const productData = {
       name: formData.name.trim(),
@@ -180,7 +182,7 @@ export function ProductModal({ open, onClose, productId }: ProductModalProps) {
       image: isBannerMode ? undefined : formData.image.trim() || undefined,
       banner: isBannerMode ? activeImageValue.trim() || undefined : formData.banner.trim() || undefined,
       active: formData.active,
-      localSpot: formData.localSpot,
+      localSpot: isBannerMode ? 'novidades' : formData.localSpot,
     };
 
     try {
@@ -205,7 +207,7 @@ export function ProductModal({ open, onClose, productId }: ProductModalProps) {
         <DialogContent className="sm:max-w-md">
           <DialogHeader className="dialog-titlebar -mx-6 -mt-6 px-6 pt-6 pb-4 rounded-t-lg">
             <DialogTitle>
-              {isEditing ? 'Editar Produto' : 'Novo Produto'}
+              {isEditing ? 'Editar Produto' : isBannerIntent ? 'Novo Banner' : 'Novo Produto'}
             </DialogTitle>
           </DialogHeader>
 
@@ -220,98 +222,119 @@ export function ProductModal({ open, onClose, productId }: ProductModalProps) {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="price">Preco (R$)</Label>
-                <Input
-                  id="price"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={formData.price}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, price: e.target.value }))}
-                  placeholder="0.00"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="stock">Estoque</Label>
-                <Input
-                  id="stock"
-                  type="number"
-                  min="0"
-                  value={formData.stock}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, stock: e.target.value }))}
-                  placeholder="0"
-                />
-              </div>
-            </div>
+            {!isBannerIntent && (
+              <>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="price">Preco (R$)</Label>
+                    <Input
+                      id="price"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={formData.price}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, price: e.target.value }))}
+                      placeholder="0.00"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="stock">Estoque</Label>
+                    <Input
+                      id="stock"
+                      type="number"
+                      min="0"
+                      value={formData.stock}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, stock: e.target.value }))}
+                      placeholder="0"
+                    />
+                  </div>
+                </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="brand">Marca</Label>
-                <Input
-                  id="brand"
-                  value={formData.brand}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, brand: e.target.value }))}
-                  placeholder="Ex: Bem Bolado"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="material">Material</Label>
-                <Input
-                  id="material"
-                  value={formData.material}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, material: e.target.value }))}
-                  placeholder="Ex: Papel, Madeira..."
-                />
-              </div>
-            </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="brand">Marca</Label>
+                    <Input
+                      id="brand"
+                      value={formData.brand}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, brand: e.target.value }))}
+                      placeholder="Ex: Bem Bolado"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="material">Material</Label>
+                    <Input
+                      id="material"
+                      value={formData.material}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, material: e.target.value }))}
+                      placeholder="Ex: Papel, Madeira..."
+                    />
+                  </div>
+                </div>
+              </>
+            )}
 
-          <div className="space-y-2">
-            <Label>Local</Label>
-            <div className="grid grid-cols-1 gap-3">
+          {!isBannerIntent && (
+            <div className="space-y-2">
+              <Label>Local</Label>
+              <div className="grid grid-cols-1 gap-3">
+                <Select
+                  value={formData.localSpot}
+                  onValueChange={(value: LocalSpot) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      localSpot: value,
+                    }))
+                  }
+                >
+                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="categoria">Categoria (padrao)</SelectItem>
+                    <SelectItem value="novidades">Novidades (vitrine)</SelectItem>
+                    <SelectItem value="mais_vendidos">Mais vendidos</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Defina em qual vitrine da Home esse produto deve aparecer.
+              </p>
+            </div>
+          )}
+          {isBannerIntent && (
+            <p className="text-xs text-muted-foreground">
+              Este cadastro sera salvo como banner de novidades.
+            </p>
+          )}
+
+          {isBannerIntent ? (
+            <div className="space-y-2">
+              <Label>Categoria</Label>
+              <div className="rounded-md border border-border bg-muted/40 px-3 py-2 text-sm text-foreground">
+                {CATEGORY_LABELS.banners}
+              </div>
+              <div className="h-1 rounded-full bg-amber-600/80" />
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <Label htmlFor="category">Categoria</Label>
               <Select
-                value={formData.localSpot}
-                onValueChange={(value: LocalSpot) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    localSpot: value,
-                  }))
-                }
+                value={formData.category || undefined}
+                onValueChange={(value: Category) => setFormData((prev) => ({ ...prev, category: value }))}
               >
-                <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder="Selecione uma categoria" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="categoria">Categoria (padrão)</SelectItem>
-                  <SelectItem value="novidades">Novidades (vitrine)</SelectItem>
-                  <SelectItem value="mais_vendidos">Mais vendidos</SelectItem>
+                  {categories.filter((cat) => cat !== 'banners').map((cat) => (
+                    <SelectItem key={cat} value={cat}>{CATEGORY_LABELS[cat]}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
+              <div
+                className={cn(
+                  'h-1 rounded-full transition-colors',
+                  formData.category ? CATEGORY_COLORS[formData.category] : 'bg-muted'
+                )}
+              />
             </div>
-            <p className="text-xs text-muted-foreground">
-              Defina em qual vitrine da Home esse produto deve aparecer.
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="category">Categoria</Label>
-            <Select
-              value={formData.category || undefined}
-              onValueChange={(value: Category) => setFormData((prev) => ({ ...prev, category: value }))}
-            >
-              <SelectTrigger><SelectValue placeholder="Selecione uma categoria" /></SelectTrigger>
-              <SelectContent>
-                {categories.map((cat) => (
-                  <SelectItem key={cat} value={cat}>{CATEGORY_LABELS[cat]}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <div
-              className={cn(
-                'h-1 rounded-full transition-colors',
-                formData.category ? CATEGORY_COLORS[formData.category] : 'bg-muted'
-              )}
-            />
-          </div>
+          )}
 
             {/* Image - URL or Upload */}
             <div className="space-y-2">

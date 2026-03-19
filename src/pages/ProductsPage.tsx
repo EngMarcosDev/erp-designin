@@ -1,5 +1,5 @@
 ﻿import { useMemo, useState } from 'react';
-import { Plus, Search, Package, Edit, Power, Eye, Trash2, ImageOff } from 'lucide-react';
+import { Plus, Search, Package, Edit, Power, Eye, Trash2, ImageOff, ImagePlus, BadgePercent } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,8 +11,11 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { useERP } from '@/contexts/ERPContext';import { formatPrice, sanitizePrice } from "@/lib/priceFormatter";import { Category, CATEGORY_LABELS, CATEGORY_COLORS, LocalSpot } from '@/types/erp';
+import { useERP } from '@/contexts/ERPContext';
+import { formatPrice } from '@/lib/priceFormatter';
+import { Category, CATEGORY_LABELS, CATEGORY_COLORS, LocalSpot, Product } from '@/types/erp';
 import { ProductModal } from '@/components/modals/ProductModal';
+import { DiscountModal } from '@/components/modals/DiscountModal';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import {
@@ -28,8 +31,11 @@ export default function ProdutosPage() {
   const { products, toggleProductStatus, deleteProduct } = useERP();
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [viewFilter, setViewFilter] = useState<'all' | 'products' | 'banners'>('all');
   const [statusFilter, setStatusFilter] = useState<'active' | 'inactive' | 'all'>('active');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [createMode, setCreateMode] = useState<'product' | 'banner'>('product');
+  const [isDiscountModalOpen, setIsDiscountModalOpen] = useState(false);
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
   const [previewImage, setPreviewImage] = useState<{ url: string; name: string } | null>(null);
   const [deleteState, setDeleteState] = useState<{
@@ -45,12 +51,29 @@ export default function ProdutosPage() {
       const matchesCategory = categoryFilter === 'all' || product.category === categoryFilter;
       const matchesStatus =
         statusFilter === 'all' || (statusFilter === 'active' ? product.active : !product.active);
-      return matchesSearch && matchesCategory && matchesStatus;
+      const isBannerEntry = product.category === 'banners';
+      const matchesView =
+        viewFilter === 'all' ||
+        (viewFilter === 'banners' ? isBannerEntry : !isBannerEntry);
+      return matchesSearch && matchesCategory && matchesStatus && matchesView;
     })
     .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
 
   const handleEdit = (id: string) => {
+    setCreateMode('product');
     setEditingProductId(id);
+    setIsModalOpen(true);
+  };
+
+  const openProductModal = () => {
+    setCreateMode('product');
+    setEditingProductId(null);
+    setIsModalOpen(true);
+  };
+
+  const openBannerModal = () => {
+    setCreateMode('banner');
+    setEditingProductId(null);
     setIsModalOpen(true);
   };
 
@@ -87,6 +110,7 @@ export default function ProdutosPage() {
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
+    setCreateMode('product');
     setEditingProductId(null);
   };
 
@@ -104,6 +128,11 @@ export default function ProdutosPage() {
 
   const useListMode = filteredProducts.length > 8;
 
+  const hasDiscount = (product: Product) =>
+    product.discountActive === true &&
+    product.originalPrice != null &&
+    Number(product.originalPrice) > Number(product.price);
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -111,10 +140,20 @@ export default function ProdutosPage() {
           <h1 className="text-3xl font-bold text-foreground">Produtos</h1>
           <p className="text-muted-foreground">Gerencie seu catalogo de produtos</p>
         </div>
-        <Button onClick={() => setIsModalOpen(true)} className="gap-2">
-          <Plus className="h-4 w-4" />
-          Novo Produto
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button onClick={openProductModal} className="gap-2">
+            <Plus className="h-4 w-4" />
+            Novo Produto
+          </Button>
+          <Button variant="outline" onClick={openBannerModal} className="gap-2">
+            <ImagePlus className="h-4 w-4" />
+            Novo Banner
+          </Button>
+          <Button variant="secondary" onClick={() => setIsDiscountModalOpen(true)} className="gap-2">
+            <BadgePercent className="h-4 w-4" />
+            Novo Desconto
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
@@ -163,6 +202,16 @@ export default function ProdutosPage() {
             <SelectItem value="all">Todos</SelectItem>
           </SelectContent>
         </Select>
+        <Select value={viewFilter} onValueChange={(value: 'all' | 'products' | 'banners') => setViewFilter(value)}>
+          <SelectTrigger className="w-full sm:w-44">
+            <SelectValue placeholder="Tipo" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Produtos e banners</SelectItem>
+            <SelectItem value="products">Somente produtos</SelectItem>
+            <SelectItem value="banners">Somente banners</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {filteredProducts.length === 0 ? (
@@ -177,7 +226,7 @@ export default function ProdutosPage() {
                   : 'Comece adicionando seu primeiro produto'}
               </p>
               {!searchTerm && categoryFilter === 'all' && (
-                <Button onClick={() => setIsModalOpen(true)}>
+                <Button onClick={openProductModal}>
                   <Plus className="h-4 w-4 mr-2" />
                   Adicionar Produto
                 </Button>
@@ -206,10 +255,27 @@ export default function ProdutosPage() {
                             : ''}
                         </Badge>
                       )}
+                      {hasDiscount(product) && (
+                        <Badge variant="secondary" className="text-[11px] bg-amber-100 text-amber-900">
+                          {product.discountLabel || 'Com desconto'}
+                        </Badge>
+                      )}
                     </div>
                     <div className="text-sm text-muted-foreground flex gap-4 mt-1">
                       <span>
-                        Preco: <strong className="text-foreground">{formatPrice(product.price, { decimals: 2 })}</strong>
+                        Preco:{' '}
+                        {hasDiscount(product) ? (
+                          <>
+                            <span className="line-through opacity-70 mr-2">
+                              {formatPrice(product.originalPrice || 0, { decimals: 2 })}
+                            </span>
+                            <strong className="text-foreground">
+                              {formatPrice(product.price, { decimals: 2 })}
+                            </strong>
+                          </>
+                        ) : (
+                          <strong className="text-foreground">{formatPrice(product.price, { decimals: 2 })}</strong>
+                        )}
                       </span>
                       <span>
                         Estoque:{' '}
@@ -261,15 +327,16 @@ export default function ProdutosPage() {
               <div
                 className="h-32 bg-muted/30 flex items-center justify-center relative group"
                 onClick={() => {
-                  if (product.image) {
-                    setPreviewImage({ url: product.image, name: product.name });
+                  const displayImage = product.banner || product.image;
+                  if (displayImage) {
+                    setPreviewImage({ url: displayImage, name: product.name });
                   }
                 }}
               >
-                {product.image ? (
+                {product.banner || product.image ? (
                   <>
                     <img
-                      src={product.image}
+                      src={product.banner || product.image}
                       alt={product.name}
                       className="max-h-full max-w-full object-contain"
                       onError={(e) => {
@@ -294,6 +361,13 @@ export default function ProdutosPage() {
                     <Badge variant="secondary" className="mt-1 text-xs">
                       {CATEGORY_LABELS[product.category] ?? product.category}
                     </Badge>
+                    {hasDiscount(product) && (
+                      <div className="mt-1">
+                        <Badge variant="secondary" className="text-[11px] bg-amber-100 text-amber-900">
+                          {product.discountLabel || 'Com desconto'}
+                        </Badge>
+                      </div>
+                    )}
                     {product.localSpot && (
                       <div className="mt-1">
                         <Badge variant="outline" className="text-[11px]">
@@ -315,7 +389,18 @@ export default function ProdutosPage() {
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Preco:</span>
-                    <span className="font-medium">{formatPrice(product.price, { decimals: 2 })}</span>
+                    <span className="font-medium text-right">
+                      {hasDiscount(product) ? (
+                        <>
+                          <span className="block line-through opacity-60 text-xs">
+                            {formatPrice(product.originalPrice || 0, { decimals: 2 })}
+                          </span>
+                          <span className="block">{formatPrice(product.price, { decimals: 2 })}</span>
+                        </>
+                      ) : (
+                        formatPrice(product.price, { decimals: 2 })
+                      )}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Estoque:</span>
@@ -351,7 +436,13 @@ export default function ProdutosPage() {
         </div>
       )}
 
-      <ProductModal open={isModalOpen} onClose={handleCloseModal} productId={editingProductId} />
+      <ProductModal
+        open={isModalOpen}
+        onClose={handleCloseModal}
+        productId={editingProductId}
+        initialMode={createMode}
+      />
+      <DiscountModal open={isDiscountModalOpen} onClose={() => setIsDiscountModalOpen(false)} />
 
       <Dialog open={!!previewImage} onOpenChange={() => setPreviewImage(null)}>
         <DialogContent className="sm:max-w-lg">

@@ -1,6 +1,6 @@
 // ERP Abacaxita shared types (legacy path)
 
-export type Category = "bacakits" | "sedas" | "piteira" | "cuia" | "acessorios" | "fumigenos";
+export type Category = "bacakits" | "sedas" | "piteira" | "cuia" | "acessorios" | "fumigenos" | "banners";
 
 export type UserRole = "ADMIN" | "USUARIO" | "CLIENTE";
 
@@ -78,8 +78,9 @@ export const CATEGORY_LABELS: Record<Category, string> = {
   piteira: "Piteiras",
   fumigenos: "Fumigenos",
   cuia: "Cuias",
-  bacakits: "BacaKits",
+  bacakits: "AbacaKits",
   acessorios: "Acessorios",
+  banners: "Banners",
 };
 
 export const CATEGORY_COLORS: Record<Category, string> = {
@@ -89,6 +90,7 @@ export const CATEGORY_COLORS: Record<Category, string> = {
   cuia: "category-cuia",
   acessorios: "category-acessorios",
   fumigenos: "category-fumigenos",
+  banners: "bg-amber-600/80",
 };
 
 export const STATUS_LABELS: Record<OrderStatus, string> = {
