@@ -53,7 +53,7 @@ export const initialProducts: Product[] = [
   },
   {
     id: '6',
-    name: 'BacaKit Iniciante',
+    name: 'AbacaKit Iniciante',
     price: 89.90,
     category: 'bacakits',
     stock: 30,
@@ -63,7 +63,7 @@ export const initialProducts: Product[] = [
   },
   {
     id: '7',
-    name: 'BacaKit Premium',
+    name: 'AbacaKit Premium',
     price: 159.90,
     category: 'bacakits',
     stock: 15,
@@ -130,7 +130,7 @@ export const initialOrders: Order[] = [
     id: '2',
     customerName: 'Ana Paula',
     items: [
-      { productId: '6', productName: 'BacaKit Iniciante', quantity: 1, unitPrice: 89.90 },
+      { productId: '6', productName: 'AbacaKit Iniciante', quantity: 1, unitPrice: 89.90 },
     ],
     total: 89.90,
     status: 'pendente',
@@ -156,5 +156,5 @@ export const mockStockComparison: StockComparison[] = [
   { productId: '3', productName: 'Piteira de Vidro Premium', erpStock: 50, headshopStock: 45, difference: 5 },
   { productId: '4', productName: 'Piteira Orgânica Natural', erpStock: 120, headshopStock: 120, difference: 0 },
   { productId: '5', productName: 'Cuia Artesanal Grande', erpStock: 25, headshopStock: 30, difference: -5 },
-  { productId: '6', productName: 'BacaKit Iniciante', erpStock: 30, headshopStock: 28, difference: 2 },
+  { productId: '6', productName: 'AbacaKit Iniciante', erpStock: 30, headshopStock: 28, difference: 2 },
 ];

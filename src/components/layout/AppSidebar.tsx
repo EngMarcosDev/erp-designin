@@ -1,4 +1,4 @@
-import {
+﻿import {
   ShoppingCart,
   Package,
   Users,
@@ -39,10 +39,10 @@ type MenuItem = {
 const menuItems: MenuItem[] = [
   { title: "Pedidos", url: "/pedidos", icon: ShoppingCart, permission: "gerenciar_pedidos" },
   { title: "Produtos", url: "/produtos", icon: Package, permission: "gerenciar_produtos" },
-  { title: "Usuários", url: "/usuarios", icon: Users, permission: "gerenciar_usuarios" },
+  { title: "Usuarios", url: "/usuarios", icon: Users, permission: "gerenciar_usuarios" },
   { title: "Estoque", url: "/estoque", icon: BarChart3, permission: "gerenciar_estoque" },
-  { title: "Relatórios", url: "/relatorios", icon: FileText, permission: "ver_relatorios" },
-  { title: "Configurações", url: "/configuracoes", icon: Settings, permission: "gerenciar_usuarios" },
+  { title: "Relatorios", url: "/relatorios", icon: FileText, permission: "ver_relatorios" },
+  { title: "Configuracoes", url: "/configuracoes", icon: Settings, permission: "gerenciar_usuarios" },
 ];
 
 export function AppSidebar() {
@@ -70,8 +70,8 @@ export function AppSidebar() {
       <div className="flex h-16 items-center justify-between px-4 border-b border-sidebar-border">
         {!isCollapsed && (
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-sidebar-primary flex items-center justify-center">
-              <span className="text-sidebar-primary-foreground font-bold text-sm">B</span>
+            <div className="w-8 h-8 rounded-lg bg-[hsl(28_40%_36%)]/20 border border-[hsl(28_40%_36%)]/35 flex items-center justify-center">
+              <img src="/assets/branding/logo-circle.svg" alt="Abacaxita" className="h-5 w-5 object-contain" />
             </div>
             <span className="font-bold text-sidebar-foreground">Abacaxita</span>
           </div>
@@ -101,7 +101,7 @@ export function AppSidebar() {
               ))}
               {visibleMenuItems.length === 0 && !isCollapsed && (
                 <div className="px-3 py-3 text-xs text-sidebar-foreground/70">
-                  Este usuário não possui permissões de menu ativas.
+                  Este usuario nao possui permissoes de menu ativas.
                 </div>
               )}
             </SidebarMenu>
@@ -117,10 +117,10 @@ export function AppSidebar() {
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-sidebar-foreground truncate">
-                {user?.email || "Usuário"}
+                {user?.email || "Usuario"}
               </p>
               <p className="text-xs text-sidebar-foreground/60 truncate">
-                {user?.isAdmin ? "Admin" : "Usuário"}
+                {user?.isAdmin ? "Admin" : "Usuario"}
               </p>
             </div>
           </div>
@@ -147,3 +147,4 @@ export function AppSidebar() {
     </Sidebar>
   );
 }
+

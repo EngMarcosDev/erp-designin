@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+﻿import { useMemo, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import {
   ArrowLeft,
@@ -29,8 +29,8 @@ const categoryNames: Record<string, string> = {
   piteira: "Piteira",
   bandeja: "Bandeja",
   tesoura: "Tesoura",
-  bacakits: "BacaKits",
-  fumigenos: "Fumígenos",
+  bacakits: "AbacaKits",
+  fumigenos: "Fumigenos",
 };
 
 const categoryIcons: Record<string, any> = {
@@ -109,10 +109,10 @@ const CategoryPage = () => {
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <h1 className="text-2xl font-display font-bold text-foreground mb-4">
-              Categoria não encontrada
+              Categoria nao encontrada
             </h1>
             <Link to="/" className="text-accent hover:underline">
-              Voltar para início
+              Voltar para inicio
             </Link>
           </div>
         </main>
@@ -182,8 +182,8 @@ const CategoryPage = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">Sem ordem</SelectItem>
-                <SelectItem value="asc">Menor preço</SelectItem>
-                <SelectItem value="desc">Maior preço</SelectItem>
+                <SelectItem value="asc">Menor preco</SelectItem>
+                <SelectItem value="desc">Maior preco</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -194,7 +194,7 @@ const CategoryPage = () => {
             </div>
           ) : productsQuery.isError ? (
             <div className="text-sm text-muted-foreground">
-              Não foi possível carregar os produtos.
+              Nao foi possivel carregar os produtos.
             </div>
           ) : (
             <>
@@ -229,3 +229,5 @@ const CategoryPage = () => {
 };
 
 export default CategoryPage;
+
+

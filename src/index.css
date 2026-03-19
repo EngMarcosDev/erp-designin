@@ -49,8 +49,8 @@
     /* Categorias */
     --category-sedas: 27 44% 46%;
     --category-piteira: 93 44% 33%;
-    --category-cuia: 27 59% 45%;
-    --category-bacakits: 19 47% 42%;
+    --category-cuia: 30 42% 54%;
+    --category-bacakits: 24 56% 34%;
     --category-acessorios: 199 36% 38%;
     --category-fumigenos: 46 92% 66%;
     /* Status */
@@ -62,38 +62,38 @@
   }
 
   .dark {
-    --background: 222 24% 9%;
-    --foreground: 36 30% 95%;
-    --card: 223 19% 14%;
-    --card-foreground: 36 30% 95%;
-    --popover: 223 19% 14%;
-    --popover-foreground: 36 30% 95%;
-    --primary: 148 52% 42%;
-    --primary-foreground: 220 35% 96%;
-    --secondary: 221 18% 20%;
-    --secondary-foreground: 36 30% 95%;
-    --muted: 221 16% 17%;
-    --muted-foreground: 34 16% 74%;
+    --background: 28 28% 10%;
+    --foreground: 36 30% 94%;
+    --card: 28 26% 14%;
+    --card-foreground: 36 30% 94%;
+    --popover: 28 26% 14%;
+    --popover-foreground: 36 30% 94%;
+    --primary: 96 32% 42%;
+    --primary-foreground: 32 28% 12%;
+    --secondary: 28 20% 20%;
+    --secondary-foreground: 36 30% 94%;
+    --muted: 28 16% 18%;
+    --muted-foreground: 34 16% 72%;
     --accent: 43 84% 56%;
-    --accent-foreground: 222 24% 11%;
-    --border: 222 14% 25%;
-    --input: 222 14% 25%;
-    --ring: 148 52% 42%;
-    --header: 223 28% 10%;
+    --accent-foreground: 28 26% 12%;
+    --border: 30 14% 26%;
+    --input: 30 14% 26%;
+    --ring: 96 32% 42%;
+    --header: 28 30% 12%;
     --header-foreground: 36 30% 95%;
-    --footer: 224 24% 12%;
+    --footer: 100 25% 14%;
     --footer-foreground: 36 30% 95%;
-    --sidebar-background: 223 30% 11%;
+    --sidebar-background: 28 30% 12%;
     --sidebar-foreground: 36 28% 94%;
-    --sidebar-primary: 148 52% 42%;
-    --sidebar-primary-foreground: 220 35% 96%;
-    --sidebar-accent: 222 18% 22%;
+    --sidebar-primary: 96 32% 42%;
+    --sidebar-primary-foreground: 32 28% 12%;
+    --sidebar-accent: 30 18% 22%;
     --sidebar-accent-foreground: 36 28% 94%;
-    --sidebar-border: 222 14% 26%;
-    --sidebar-ring: 148 52% 42%;
-    --shadow-soft: 0 12px 30px rgba(3, 8, 20, 0.45);
-    --shadow-strong: 0 26px 70px rgba(3, 8, 20, 0.65);
-    --popup-header: #1b253b;
+    --sidebar-border: 30 14% 26%;
+    --sidebar-ring: 96 32% 42%;
+    --shadow-soft: 0 12px 30px rgba(12, 7, 3, 0.4);
+    --shadow-strong: 0 26px 70px rgba(12, 7, 3, 0.62);
+    --popup-header: #2a2018;
   }
 }
 
@@ -112,9 +112,9 @@
   }
   .dark body {
     background-image:
-      radial-gradient(circle at 12% 18%, rgba(59, 130, 246, 0.14) 0, rgba(59, 130, 246, 0) 40%),
-      radial-gradient(circle at 88% 0, rgba(34, 197, 94, 0.12) 0, rgba(34, 197, 94, 0) 35%),
-      linear-gradient(145deg, rgba(16, 24, 40, 0.95) 0%, rgba(10, 14, 24, 0.98) 100%);
+      radial-gradient(circle at 12% 18%, rgba(140, 102, 58, 0.16) 0, rgba(140, 102, 58, 0) 44%),
+      radial-gradient(circle at 88% 0, rgba(72, 120, 54, 0.14) 0, rgba(72, 120, 54, 0) 40%),
+      linear-gradient(145deg, rgba(26, 18, 12, 0.95) 0%, rgba(16, 11, 8, 0.98) 100%);
   }
   .gradient-bar {
     background: linear-gradient(90deg, #c08d2b 0%, #6f8f3d 50%, #d6543f 100%);
@@ -309,4 +309,32 @@
     url("/assets/branding/pattern-topo.svg");
   background-size: cover;
   background-repeat: no-repeat;
+}
+
+@media (max-width: 768px) {
+  .card-soft,
+  .card-strong {
+    border-radius: 0.9rem;
+  }
+
+  .dialog-titlebar {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}
+
+@media (max-width: 640px) {
+  body {
+    background-attachment: scroll;
+  }
+
+  .category-banner {
+    padding: 0.65rem 0.75rem;
+  }
+
+  .logo-watermark::after {
+    background-size: 220px;
+    background-position: 50% 8%;
+    opacity: 0.05;
+  }
 }

@@ -1,4 +1,4 @@
-﻿import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Plus, Search, Package, Edit, Eye, Trash2, ImageOff, ImagePlus, BadgePercent } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -32,7 +32,7 @@ export default function ProdutosPage() {
   const { products, toggleProductStatus, deleteProduct } = useERP();
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
-  const [viewFilter, setViewFilter] = useState<'all' | 'products' | 'banners'>('all');
+  const [viewFilter, setViewFilter] = useState<'all' | 'products' | 'banners'>('products');
   const [statusFilter, setStatusFilter] = useState<'active' | 'inactive' | 'all'>('active');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [createMode, setCreateMode] = useState<'product' | 'banner'>('product');
@@ -116,10 +116,26 @@ export default function ProdutosPage() {
   };
 
   const categories = Object.keys(CATEGORY_LABELS) as Category[];
+  const visibleCategories = useMemo(() => {
+    if (viewFilter === 'products') {
+      return categories.filter((cat) => cat !== 'banners');
+    }
+    if (viewFilter === 'banners') {
+      return categories.filter((cat) => cat === 'banners');
+    }
+    return categories;
+  }, [categories, viewFilter]);
+
   const categoryOptions = useMemo(
-    () => categories.map((cat) => ({ cat, count: products.filter((p) => p.category === cat).length })),
-    [products, categories]
+    () => visibleCategories.map((cat) => ({ cat, count: products.filter((p) => p.category === cat).length })),
+    [products, visibleCategories]
   );
+
+  useEffect(() => {
+    if (categoryFilter !== 'all' && !visibleCategories.includes(categoryFilter as Category)) {
+      setCategoryFilter('all');
+    }
+  }, [categoryFilter, visibleCategories]);
 
   const localLabels: Record<LocalSpot, string> = {
     novidades: 'Novidades',
@@ -186,7 +202,7 @@ export default function ProdutosPage() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todas as categorias</SelectItem>
-            {categories.map((cat) => (
+            {visibleCategories.map((cat) => (
               <SelectItem key={cat} value={cat}>
                 {CATEGORY_LABELS[cat]}
               </SelectItem>
@@ -248,6 +264,11 @@ export default function ProdutosPage() {
                       <Badge variant="secondary" className="text-xs">
                         {CATEGORY_LABELS[product.category]}
                       </Badge>
+                      {product.subcategory ? (
+                        <Badge variant="outline" className="text-[11px]">
+                          {product.subcategory}
+                        </Badge>
+                      ) : null}
                       {product.localSpot && (
                         <Badge variant="outline" className="text-[11px]">
                           {localLabels[product.localSpot]}
@@ -363,6 +384,13 @@ export default function ProdutosPage() {
                     <Badge variant="secondary" className="mt-1 text-xs">
                       {CATEGORY_LABELS[product.category] ?? product.category}
                     </Badge>
+                    {product.subcategory ? (
+                      <div className="mt-1">
+                        <Badge variant="outline" className="text-[11px]">
+                          {product.subcategory}
+                        </Badge>
+                      </div>
+                    ) : null}
                     {hasDiscount(product) && (
                       <div className="mt-1">
                         <Badge variant="secondary" className="text-[11px] bg-amber-100 text-amber-900">

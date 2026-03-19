@@ -14,8 +14,10 @@ export interface ErpProduct {
   stock: number;
   image: string;
   bannerImage?: string;
+  showBannerPrice?: boolean;
   gallery?: string[];
   brand?: string;
+  subcategory?: string;
   material?: string;
   isNew?: boolean;
   isFeatured?: boolean;
@@ -80,6 +82,29 @@ const buildHeaders = () => {
   };
 };
 
+const sanitizePayload = (value: unknown): unknown => {
+  if (Array.isArray(value)) {
+    return value.map((item) => sanitizePayload(item)).filter((item) => item !== undefined);
+  }
+
+  if (value && typeof value === "object") {
+    const sanitized = Object.entries(value as Record<string, unknown>).reduce<Record<string, unknown>>(
+      (accumulator, [key, itemValue]) => {
+        const normalized = sanitizePayload(itemValue);
+        if (normalized !== undefined) {
+          accumulator[key] = normalized;
+        }
+        return accumulator;
+      },
+      {}
+    );
+
+    return Object.keys(sanitized).length > 0 ? sanitized : undefined;
+  }
+
+  return value === undefined ? undefined : value;
+};
+
 const request = async (path: string, init?: RequestInit) => {
   let response: Response;
   try {
@@ -114,14 +139,14 @@ export const fetchProducts = async (): Promise<ErpProduct[]> => {
 export const createProduct = async (payload: Partial<ErpProduct>): Promise<ErpProduct> => {
   return request("/products", {
     method: "POST",
-    body: JSON.stringify(payload),
+    body: JSON.stringify(sanitizePayload(payload)),
   });
 };
 
 export const updateProduct = async (id: number, payload: Partial<ErpProduct>): Promise<ErpProduct> => {
   return request(`/products/${id}`, {
     method: "PUT",
-    body: JSON.stringify(payload),
+    body: JSON.stringify(sanitizePayload(payload)),
   });
 };
 
@@ -155,14 +180,14 @@ export const fetchUsers = async (): Promise<ErpUser[]> => {
 export const createUser = async (payload: Partial<ErpUser> & { password: string }): Promise<ErpUser> => {
   return request("/users", {
     method: "POST",
-    body: JSON.stringify(payload),
+    body: JSON.stringify(sanitizePayload(payload)),
   });
 };
 
 export const updateUser = async (id: number, payload: Partial<ErpUser> & { password?: string }) => {
   return request(`/users/${id}`, {
     method: "PUT",
-    body: JSON.stringify(payload),
+    body: JSON.stringify(sanitizePayload(payload)),
   });
 };
 

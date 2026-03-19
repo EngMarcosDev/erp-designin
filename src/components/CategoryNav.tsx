@@ -6,7 +6,7 @@ const categories = [
   { name: "Piteiras", icon: Filter, href: "/categoria/piteira" },
   { name: "Fumigenos", icon: Flame, href: "/categoria/fumigenos" },
   { name: "Cuias", icon: Coffee, href: "/categoria/cuia" },
-  { name: "BacaKits", icon: Package, href: "/categoria/bacakits" },
+  { name: "AbacaKits", icon: Package, href: "/categoria/bacakits" },
   { name: "Acessorios", icon: Sparkles, href: "/categoria/acessorios" },
 ];
 

@@ -1,125 +1,84 @@
-import { useState } from "react";
-import { Instagram, Mail, Phone, MessageCircle } from "lucide-react";
+import { Instagram, Mail, MessageCircle, Phone } from "lucide-react";
 import { Link } from "react-router-dom";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 const Footer = () => {
-  const [aboutOpen, setAboutOpen] = useState(false);
-
-  const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
-
   return (
     <footer className="mt-auto">
-      {/* Rasta stripe on top */}
       <div className="rasta-stripe" />
 
-      <div className="footer-wood py-8 md:py-12 px-4 relative">
-        <div className="relative z-10 max-w-5xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-footer-foreground">
-            {/* Brand */}
+      <div className="footer-wood relative px-4 py-8 md:py-12">
+        <div className="relative z-10 mx-auto max-w-5xl">
+          <div className="grid grid-cols-1 gap-8 text-footer-foreground md:grid-cols-3">
             <div className="text-center md:text-left">
-              <h3 className="text-xl md:text-2xl font-display font-bold tracking-widest mb-3">
-                BACAXITA
-              </h3>
-              <p className="text-sm opacity-75 leading-relaxed max-w-xs mx-auto md:mx-0">
-                Sua loja de acessórios com os melhores produtos e preços do mercado.
+              <h3 className="mb-3 text-xl font-display font-bold tracking-widest md:text-2xl">ABACAXITA</h3>
+              <p className="mx-auto max-w-xs text-sm leading-relaxed opacity-75 md:mx-0">
+                Painel ERP para gestao de catalogo, pedidos e estoque com fluxo integrado ao HeadShop.
               </p>
             </div>
 
-            {/* Links */}
             <div className="text-center">
-              <h4 className="font-semibold mb-4 text-rasta-yellow text-sm uppercase tracking-wider">
-                Links Rápidos
-              </h4>
+              <h4 className="mb-4 text-sm font-semibold uppercase tracking-wider text-rasta-yellow">Links rapidos</h4>
               <nav className="flex flex-col gap-2">
-                <button
-                  onClick={scrollToTop}
-                  className="text-sm opacity-75 hover:opacity-100 hover:text-rasta-yellow transition-all"
-                >
-                  Produtos
-                </button>
-                <Link
-                  to="/categoria/bacakits"
-                  className="text-sm opacity-75 hover:opacity-100 hover:text-rasta-yellow transition-all"
-                >
-                  Promoções
+                <Link to="/" className="text-sm opacity-75 transition-all hover:text-rasta-yellow hover:opacity-100">
+                  Inicio
                 </Link>
-                <button
-                  onClick={() => setAboutOpen(true)}
-                  className="text-sm opacity-75 hover:opacity-100 hover:text-rasta-yellow transition-all"
-                >
-                  Sobre Nós
-                </button>
+                <Link to="/produtos" className="text-sm opacity-75 transition-all hover:text-rasta-yellow hover:opacity-100">
+                  Produtos
+                </Link>
+                <Link to="/pedidos" className="text-sm opacity-75 transition-all hover:text-rasta-yellow hover:opacity-100">
+                  Pedidos
+                </Link>
+                <Link to="/configuracoes" className="text-sm opacity-75 transition-all hover:text-rasta-yellow hover:opacity-100">
+                  Configuracoes
+                </Link>
               </nav>
             </div>
 
-            {/* Contact */}
             <div className="text-center md:text-right">
-              <h4 className="font-semibold mb-4 text-rasta-yellow text-sm uppercase tracking-wider">
-                Contato
-              </h4>
+              <h4 className="mb-4 text-sm font-semibold uppercase tracking-wider text-rasta-yellow">Contato</h4>
               <div className="flex flex-col gap-2 text-sm opacity-75">
                 <a
-                  href="mailto:abacaxita.headshop@gmail.com"
-                  className="flex items-center justify-center md:justify-end gap-2 hover:text-rasta-yellow transition-all"
+                  href="mailto:adm.bacaxita@gmail.com"
+                  className="flex items-center justify-center gap-2 transition-all hover:text-rasta-yellow md:justify-end"
                 >
-                  <Mail className="w-4 h-4" />
-                  <span>adm.abacaxita@gmail.com</span>
+                  <Mail className="h-4 w-4" />
+                  <span>adm.bacaxita@gmail.com</span>
                 </a>
                 <a
                   href="tel:+5581981705445"
-                  className="flex items-center justify-center md:justify-end gap-2 hover:text-rasta-yellow transition-all"
+                  className="flex items-center justify-center gap-2 transition-all hover:text-rasta-yellow md:justify-end"
                 >
-                  <Phone className="w-4 h-4" />
+                  <Phone className="h-4 w-4" />
                   <span>(81) 98170-5445</span>
                 </a>
               </div>
 
-              <div className="flex items-center justify-center md:justify-end gap-4 mt-4">
+              <div className="mt-5 flex flex-wrap items-center justify-center gap-3 md:justify-end">
                 <a
-                  href="https://instagram.com/abacaxita"
+                  href="https://www.instagram.com/abacaxitashop?igsh=N2NncGpidDg4NmJq&utm_source=qr"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="opacity-75 hover:opacity-100 hover:text-rasta-yellow transition-all"
+                  className="opacity-75 transition-all hover:text-rasta-yellow hover:opacity-100"
                 >
-                  <Instagram className="w-5 h-5" />
+                  <Instagram className="h-5 w-5" />
                 </a>
                 <a
                   href="https://wa.me/5581981705445"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="opacity-75 hover:opacity-100 hover:text-rasta-yellow transition-all"
+                  className="opacity-75 transition-all hover:text-rasta-yellow hover:opacity-100"
                 >
-                  <MessageCircle className="w-5 h-5" />
+                  <MessageCircle className="h-5 w-5" />
                 </a>
               </div>
             </div>
           </div>
 
-          {/* Copyright */}
-          <div className="mt-8 pt-6 border-t border-white/10 text-center">
+          <div className="mt-8 border-t border-white/10 pt-6 text-center">
             <p className="text-xs opacity-50">© 2026 Abacaxita. Todos os direitos reservados.</p>
           </div>
         </div>
       </div>
-
-      {/* About Us Dialog */}
-      <Dialog open={aboutOpen} onOpenChange={setAboutOpen}>
-        <DialogContent className="max-w-md bg-card border-border">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-display text-accent text-center">
-              Sobre a Abacaxita
-            </DialogTitle>
-          </DialogHeader>
-          <div className="py-4 text-center">
-            <p className="text-muted-foreground leading-relaxed">
-              Olá, texo teste de apresentação, caso eu tenha esquecido de mudar, me lembre. vlw
-            </p>
-          </div>
-        </DialogContent>
-      </Dialog>
     </footer>
   );
 };

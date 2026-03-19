@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+﻿import { useState, useEffect, useRef } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -101,13 +101,13 @@ export function UserModal({ open, onClose, userId }: UserModalProps) {
     setIsLoading(true);
 
     if (!formData.name.trim()) {
-      toast.error('Nome é obrigatório');
+      toast.error('Nome e obrigatorio');
       setIsLoading(false);
       return;
     }
 
     if (!formData.email.trim() || !formData.email.includes('@')) {
-      toast.error('Email inválido');
+      toast.error('Email invalido');
       setIsLoading(false);
       return;
     }
@@ -135,7 +135,7 @@ export function UserModal({ open, onClose, userId }: UserModalProps) {
           active: formData.active,
           avatar: formData.avatar || undefined,
         });
-        toast.success('Usuário atualizado com sucesso!');
+        toast.success('Usuario atualizado com sucesso!');
       } else {
         await addUser({
           name: formData.name.trim(),
@@ -147,11 +147,11 @@ export function UserModal({ open, onClose, userId }: UserModalProps) {
           permissions,
           password: formData.password,
         });
-        toast.success('Usuário cadastrado com sucesso!');
+        toast.success('Usuario cadastrado com sucesso!');
       }
       onClose();
     } catch (err: any) {
-      toast.error(err?.message || 'Erro ao salvar usuário');
+      toast.error(err?.message || 'Erro ao salvar usuario');
     } finally {
       setIsLoading(false);
     }
@@ -165,7 +165,7 @@ export function UserModal({ open, onClose, userId }: UserModalProps) {
       <DialogContent className="sm:max-w-md">
         <DialogHeader className="dialog-titlebar -mx-6 -mt-6 px-6 pt-6 pb-4 rounded-t-lg">
           <DialogTitle>
-            {isEditing ? 'Editar Usuário' : 'Novo Usuário'}
+            {isEditing ? 'Editar Usuario' : 'Novo Usuario'}
           </DialogTitle>
         </DialogHeader>
 
@@ -207,7 +207,7 @@ export function UserModal({ open, onClose, userId }: UserModalProps) {
               id="name"
               value={formData.name}
               onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
-              placeholder="Ex: João Silva"
+              placeholder="Ex: Joao Silva"
             />
           </div>
 
@@ -231,7 +231,7 @@ export function UserModal({ open, onClose, userId }: UserModalProps) {
                   type={showPassword ? 'text' : 'password'}
                   value={formData.password}
                   onChange={(e) => setFormData((prev) => ({ ...prev, password: e.target.value }))}
-                  placeholder="Mínimo 6 caracteres"
+                  placeholder="Minimo 6 caracteres"
                 />
                 <Button
                   type="button"
@@ -302,7 +302,7 @@ export function UserModal({ open, onClose, userId }: UserModalProps) {
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
               <Label htmlFor="active">Status</Label>
-              <p className="text-sm text-muted-foreground">Usuário pode acessar o sistema</p>
+              <p className="text-sm text-muted-foreground">Usuario pode acessar o sistema</p>
             </div>
             <Switch
               id="active"
@@ -322,4 +322,6 @@ export function UserModal({ open, onClose, userId }: UserModalProps) {
     </Dialog>
   );
 }
+
+
 

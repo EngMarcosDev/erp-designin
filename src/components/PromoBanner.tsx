@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { Leaf, Truck, Tag } from "lucide-react";
 
 const banners = [
@@ -12,14 +12,14 @@ const banners = [
   {
     id: 2,
     bg: "bg-rasta-yellow",
-    text: "Entregas rastreáveis.",
-    textColor: "text-primary",
+    text: "Entregas rastreaveis.",
+    textColor: "text-black",
     icon: Truck,
   },
   {
     id: 3,
     bg: "bg-rasta-red",
-    text: "Consulte nossas promoções.",
+    text: "Consulte nossas promocoes.",
     textColor: "text-white",
     icon: Tag,
   },
@@ -73,3 +73,4 @@ const PromoBanner = () => {
 };
 
 export default PromoBanner;
+

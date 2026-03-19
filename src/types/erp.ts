@@ -34,11 +34,13 @@ export interface Product {
   discountActive?: boolean;
   category: Category;
   brand?: string;
+  subcategory?: string;
   material?: string;
   stock: number;
   image?: string;
   gallery?: string[];
   banner?: string;
+  showBannerPrice?: boolean;
   active: boolean;
   localSpot?: LocalSpot;
   localCategory?: Category | null;
