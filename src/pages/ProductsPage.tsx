@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Plus, Search, Package, Edit, Eye, Trash2, ImageOff, ImagePlus, BadgePercent } from 'lucide-react';
+import { Plus, Search, Package, Edit, Eye, Trash2, ImageOff, BadgePercent, Megaphone } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,6 +30,7 @@ import {
 } from '@/components/ui/dialog';
 
 export default function ProdutosPage() {
+  const navigate = useNavigate();
   const { products, toggleProductStatus, deleteProduct } = useERP();
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
@@ -68,12 +70,6 @@ export default function ProdutosPage() {
 
   const openProductModal = () => {
     setCreateMode('product');
-    setEditingProductId(null);
-    setIsModalOpen(true);
-  };
-
-  const openBannerModal = () => {
-    setCreateMode('banner');
     setEditingProductId(null);
     setIsModalOpen(true);
   };
@@ -162,9 +158,9 @@ export default function ProdutosPage() {
             <Plus className="h-4 w-4" />
             Novo Produto
           </Button>
-          <Button variant="outline" onClick={openBannerModal} className="gap-2">
-            <ImagePlus className="h-4 w-4" />
-            Novo Banner
+          <Button variant="outline" onClick={() => navigate('/conteudo')} className="gap-2">
+            <Megaphone className="h-4 w-4" />
+            Abrir Conteudo do Site
           </Button>
           <Button variant="secondary" onClick={() => setIsDiscountModalOpen(true)} className="gap-2">
             <BadgePercent className="h-4 w-4" />

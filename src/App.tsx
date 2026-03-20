@@ -12,6 +12,7 @@ import SettingsPage from "@/pages/SettingsPage";
 import { UISettingsProvider } from "@/contexts/UISettingsContext";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import type { Permission } from "@/types/erp";
+import SiteContentPage from "@/pages/SiteContentPage";
 
 const routeOrder: Array<{ path: string; permission: Permission }> = [
   { path: "/pedidos", permission: "gerenciar_pedidos" },
@@ -19,6 +20,7 @@ const routeOrder: Array<{ path: string; permission: Permission }> = [
   { path: "/usuarios", permission: "gerenciar_usuarios" },
   { path: "/estoque", permission: "gerenciar_estoque" },
   { path: "/relatorios", permission: "ver_relatorios" },
+  { path: "/conteudo", permission: "gerenciar_produtos" },
   { path: "/configuracoes", permission: "gerenciar_usuarios" },
 ];
 
@@ -134,6 +136,17 @@ const App = () => (
                 <PrivateRoute requiredPermission="ver_relatorios">
                   <MainLayout>
                     <ReportsPage />
+                  </MainLayout>
+                </PrivateRoute>
+              }
+            />
+
+            <Route
+              path="/conteudo"
+              element={
+                <PrivateRoute requiredPermission="gerenciar_produtos">
+                  <MainLayout>
+                    <SiteContentPage />
                   </MainLayout>
                 </PrivateRoute>
               }

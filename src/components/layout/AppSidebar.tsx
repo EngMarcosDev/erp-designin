@@ -9,6 +9,7 @@
   Menu,
   ChevronLeft,
   LogOut,
+  Megaphone,
 } from "lucide-react";
 import type { ComponentType } from "react";
 import { useNavigate } from "react-router-dom";
@@ -39,6 +40,7 @@ type MenuItem = {
 const menuItems: MenuItem[] = [
   { title: "Pedidos", url: "/pedidos", icon: ShoppingCart, permission: "gerenciar_pedidos" },
   { title: "Produtos", url: "/produtos", icon: Package, permission: "gerenciar_produtos" },
+  { title: "Conteudo", url: "/conteudo", icon: Megaphone, permission: "gerenciar_produtos" },
   { title: "Usuarios", url: "/usuarios", icon: Users, permission: "gerenciar_usuarios" },
   { title: "Estoque", url: "/estoque", icon: BarChart3, permission: "gerenciar_estoque" },
   { title: "Relatorios", url: "/relatorios", icon: FileText, permission: "ver_relatorios" },

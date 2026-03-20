@@ -60,6 +60,42 @@ export interface StockCompareItem {
   headshop: { stock: number; price: number; active: boolean } | null;
 }
 
+export interface ErpCategory {
+  id: number;
+  name: string;
+  slug: string;
+  description?: string | null;
+  image?: string | null;
+  isActive?: boolean;
+  position?: number;
+  _count?: {
+    products?: number;
+  };
+}
+
+export type ErpSitePopupType = "FIRST" | "ALERT" | "NEWS";
+export type ErpSitePopupLevel = "INFO" | "SUCCESS" | "WARNING" | "ERROR";
+
+export interface ErpSitePopup {
+  id: number;
+  type: ErpSitePopupType;
+  level: ErpSitePopupLevel;
+  title: string;
+  message: string;
+  imageUrl?: string | null;
+  iconKey?: string | null;
+  buttonLabel?: string | null;
+  buttonUrl?: string | null;
+  isActive: boolean;
+  startsAt?: string | null;
+  endsAt?: string | null;
+  dismissible: boolean;
+  displaySeconds?: number | null;
+  priority: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 const apiBase = resolveErpApiBase(import.meta.env.VITE_API_URL);
 
 const getToken = () => {
@@ -209,5 +245,85 @@ export const syncStockPull = async () => {
 export const syncStockPush = async () => {
   return request("/sync/stock/push", {
     method: "POST",
+  });
+};
+
+export const fetchCategories = async (includeInactive = false): Promise<ErpCategory[]> => {
+  const query = includeInactive ? "?includeInactive=true" : "";
+  return request(`/categories${query}`);
+};
+
+export const createCategory = async (payload: Partial<ErpCategory> & { name: string }): Promise<ErpCategory> => {
+  return request("/categories", {
+    method: "POST",
+    body: JSON.stringify(sanitizePayload(payload)),
+  });
+};
+
+export const updateCategory = async (id: number, payload: Partial<ErpCategory>): Promise<ErpCategory> => {
+  return request(`/categories/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(sanitizePayload(payload)),
+  });
+};
+
+export const toggleCategoryStatus = async (id: number, isActive: boolean): Promise<ErpCategory> => {
+  return request(`/categories/${id}/toggle`, {
+    method: "PATCH",
+    body: JSON.stringify({ isActive }),
+  });
+};
+
+export const reorderCategories = async (orderedIds: number[]): Promise<ErpCategory[]> => {
+  return request("/categories/reorder", {
+    method: "PUT",
+    body: JSON.stringify({ orderedIds }),
+  });
+};
+
+export const fetchSitePopups = async (
+  params: { type?: ErpSitePopupType; active?: boolean; onlyLive?: boolean } = {}
+): Promise<ErpSitePopup[]> => {
+  const search = new URLSearchParams();
+  if (params.type) search.set("type", params.type);
+  if (params.active !== undefined) search.set("active", String(params.active));
+  if (params.onlyLive !== undefined) search.set("onlyLive", String(params.onlyLive));
+  const query = search.toString();
+  return request(`/site/popups${query ? `?${query}` : ""}`);
+};
+
+export const createSitePopup = async (
+  payload: Partial<ErpSitePopup> & { title: string; message: string }
+): Promise<ErpSitePopup> => {
+  return request("/site/popups", {
+    method: "POST",
+    body: JSON.stringify(sanitizePayload(payload)),
+  });
+};
+
+export const updateSitePopup = async (id: number, payload: Partial<ErpSitePopup>): Promise<ErpSitePopup> => {
+  return request(`/site/popups/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(sanitizePayload(payload)),
+  });
+};
+
+export const toggleSitePopupStatus = async (id: number, isActive: boolean): Promise<ErpSitePopup> => {
+  return request(`/site/popups/${id}/toggle`, {
+    method: "PATCH",
+    body: JSON.stringify({ isActive }),
+  });
+};
+
+export const reorderSitePopups = async (orderedIds: number[]): Promise<ErpSitePopup[]> => {
+  return request("/site/popups/reorder", {
+    method: "PUT",
+    body: JSON.stringify({ orderedIds }),
+  });
+};
+
+export const deactivateSitePopup = async (id: number): Promise<{ ok: boolean }> => {
+  return request(`/site/popups/${id}`, {
+    method: "DELETE",
   });
 };
