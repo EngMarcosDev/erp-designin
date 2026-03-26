@@ -26,6 +26,8 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
 export interface Product {
   id: string;
   name: string;
+  description?: string;
+  details?: string;
   price: number;
   originalPrice?: number | null;
   discountPercent?: number | null;

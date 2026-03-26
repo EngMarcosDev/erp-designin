@@ -42,7 +42,7 @@ interface ERPContextType {
   // Users
   users: User[];
   addUser: (user: Omit<User, "id" | "createdAt"> & { password: string }) => AsyncVoid;
-  updateUser: (id: string, user: Partial<User>) => AsyncVoid;
+  updateUser: (id: string, user: Partial<User> & { password?: string }) => AsyncVoid;
   deleteUser: (id: string) => AsyncVoid;
   toggleUserStatus: (id: string) => AsyncVoid;
   batchToggleUserStatus: (ids: string[], active: boolean) => AsyncVoid;
@@ -124,7 +124,7 @@ export function ERPProvider({ children }: { children: ReactNode }) {
   });
 
   const updateUserMut = useMutation({
-    mutationFn: ({ id, payload }: { id: number; payload: Partial<User> }) => apiUpdateUser(id, payload),
+    mutationFn: ({ id, payload }: { id: number; payload: Partial<User> & { password?: string } }) => apiUpdateUser(id, payload),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["erp", "users"] }),
   });
 
@@ -199,6 +199,8 @@ export function ERPProvider({ children }: { children: ReactNode }) {
       // Accept either legacy string category or backend category object.
       // This prevents UI crashes when API payload shape changes.
       category: mappedCategory,
+      description: typeof p.description === "string" ? p.description : undefined,
+      details: typeof p.details === "string" ? p.details : undefined,
       brand: typeof p.brand === "string" ? p.brand : undefined,
       subcategory: typeof p.subcategory === "string" ? p.subcategory : undefined,
       material: typeof p.material === "string" ? p.material : undefined,
@@ -313,6 +315,8 @@ export function ERPProvider({ children }: { children: ReactNode }) {
     const flags = mapSpotToFlags(product.localSpot);
     await createProductMut.mutateAsync({
       name: product.name,
+      description: product.description,
+      details: product.details,
       price: product.price,
       originalPrice: product.originalPrice ?? null,
       discountPercent: product.discountPercent ?? null,

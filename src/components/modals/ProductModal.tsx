@@ -9,6 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -153,6 +154,8 @@ export function ProductModal({ open, onClose, productId, initialMode = "product"
 
   const [formData, setFormData] = useState({
     name: "",
+    description: "",
+    details: "",
     price: "",
     category: "" as Category | "",
     brand: "",
@@ -176,6 +179,8 @@ export function ProductModal({ open, onClose, productId, initialMode = "product"
       const normalizedGallery = dedupeImageList([existingProduct.image || "", ...(existingProduct.gallery || [])]);
       setFormData({
         name: existingProduct.name,
+        description: existingProduct.description || "",
+        details: existingProduct.details || "",
         price: existingProduct.price.toString(),
         category: existingProduct.category,
         brand: existingProduct.brand || "",
@@ -192,6 +197,8 @@ export function ProductModal({ open, onClose, productId, initialMode = "product"
     } else {
       setFormData({
         name: "",
+        description: "",
+        details: "",
         price: isBannerIntent ? "0" : "",
         category: isBannerIntent ? "banners" : "",
         brand: "",
@@ -460,6 +467,8 @@ export function ProductModal({ open, onClose, productId, initialMode = "product"
 
     const productData = {
       name: formData.name.trim(),
+      description: formData.description.trim() || undefined,
+      details: formData.details.trim() || undefined,
       price,
       category: normalizedCategory,
       brand: formData.brand.trim() || undefined,
@@ -509,6 +518,35 @@ export function ProductModal({ open, onClose, productId, initialMode = "product"
                 placeholder="Ex: Seda Premium"
               />
             </div>
+
+            {!isBannerMode && (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="description">Resumo curto</Label>
+                  <Textarea
+                    id="description"
+                    rows={2}
+                    value={formData.description}
+                    onChange={(event) => setFormData((previous) => ({ ...previous, description: event.target.value }))}
+                    placeholder="Texto curto para apresentar o produto."
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="details">Detalhes para o cliente</Label>
+                  <Textarea
+                    id="details"
+                    rows={4}
+                    value={formData.details}
+                    onChange={(event) => setFormData((previous) => ({ ...previous, details: event.target.value }))}
+                    placeholder="Ex: Esse kit e composto por seda slim, piteira de vidro e dichavador."
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Esse bloco aparece organizado na pagina do produto no HeadShop.
+                  </p>
+                </div>
+              </>
+            )}
 
             {!isBannerMode && (
               <>

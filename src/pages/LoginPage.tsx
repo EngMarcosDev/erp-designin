@@ -61,8 +61,8 @@ export default function LoginPage() {
           <div className="absolute top-0 left-0 right-0 h-1 gradient-bar" />
         </div>
         <div className="text-center z-10">
-          <div className="w-32 h-32 rounded-2xl bg-[hsl(35,80%,55%)]/12 border border-[hsl(35,80%,55%)]/30 flex items-center justify-center mx-auto mb-6 shadow-2xl backdrop-blur-sm">
-            <img src="/assets/branding/logo-erp.png" alt="ERP Bacaxita" className="h-24 w-24 object-contain" />
+          <div className="mx-auto mb-6 flex h-32 w-32 items-center justify-center rounded-full border border-[hsl(35,80%,55%)]/30 bg-[hsl(35,80%,55%)]/12 shadow-2xl backdrop-blur-sm">
+            <img src="/assets/branding/logo-erp.png" alt="ERP Bacaxita" className="h-24 w-24 rounded-full object-cover ring-2 ring-white/40" />
           </div>
           <h1 className="text-5xl font-bold text-[hsl(35,25%,92%)] mb-2">ERP Bacaxita</h1>
           <p className="text-lg text-[hsl(35,25%,92%)]/60">Sistema de Gestao ERP</p>
@@ -72,8 +72,8 @@ export default function LoginPage() {
       <div className="flex-1 flex items-center justify-center p-8 bg-background">
         <div className="w-full max-w-md">
           <div className="lg:hidden text-center mb-8">
-            <div className="w-20 h-20 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto mb-4">
-              <img src="/assets/branding/logo-erp.png" alt="ERP Bacaxita" className="h-14 w-14 object-contain" />
+            <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full border border-primary/20 bg-primary/10">
+              <img src="/assets/branding/logo-erp.png" alt="ERP Bacaxita" className="h-14 w-14 rounded-full object-cover ring-1 ring-white/60" />
             </div>
             <h1 className="text-2xl font-bold text-foreground">ERP Bacaxita</h1>
           </div>

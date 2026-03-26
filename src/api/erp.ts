@@ -3,6 +3,8 @@ import { resolveErpApiBase } from "@/lib/apiBase";
 export interface ErpProduct {
   id: number;
   name: string;
+  description?: string;
+  details?: string;
   price: number;
   originalPrice?: number;
   discountPercent?: number;
@@ -50,6 +52,29 @@ export interface ErpUser {
   active?: boolean;
   permissions?: string[];
   avatar?: string;
+}
+
+export interface ErpUserAuditLog {
+  id: number;
+  action: string;
+  actionLabel: string;
+  entity: string;
+  entityId?: number | null;
+  actor?: {
+    id: number;
+    name: string;
+    email: string;
+  } | null;
+  targetUser?: {
+    id?: number;
+    name?: string;
+    email?: string;
+  } | null;
+  changedFields?: string[];
+  summary?: string | null;
+  details?: Record<string, unknown> | null;
+  ipAddress?: string | null;
+  createdAt: string;
 }
 
 export interface StockCompareItem {
@@ -211,6 +236,10 @@ export const fetchStockReport = async (): Promise<StockReportItem[]> => {
 
 export const fetchUsers = async (): Promise<ErpUser[]> => {
   return request("/users");
+};
+
+export const fetchUserAuditLogs = async (): Promise<ErpUserAuditLog[]> => {
+  return request("/users/audit");
 };
 
 export const createUser = async (payload: Partial<ErpUser> & { password: string }): Promise<ErpUser> => {

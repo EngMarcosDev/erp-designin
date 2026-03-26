@@ -143,7 +143,7 @@ export function DiscountModal({ open, onClose }: DiscountModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="max-h-[88vh] sm:max-w-lg">
         <DialogHeader className="dialog-titlebar -mx-6 -mt-6 px-6 pt-6 pb-4 rounded-t-lg">
           <DialogTitle>Novo Desconto</DialogTitle>
         </DialogHeader>
@@ -253,4 +253,3 @@ export function DiscountModal({ open, onClose }: DiscountModalProps) {
     </Dialog>
   );
 }
-

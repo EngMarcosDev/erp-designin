@@ -18,8 +18,8 @@ const ErpLayout = ({ children }: ErpLayoutProps) => {
           <div className="h-1 w-full bg-gradient-to-r from-[#c1a062] via-[#7fbf72] to-[#f05f3b]" />
           <div className="flex items-center justify-between gap-4 px-6 py-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-white border border-border flex items-center justify-center shadow-sm">
-                <img src="/assets/branding/logo-erp.png" alt="Logo ERP Bacaxita" className="h-8 w-8 object-contain opacity-95" />
+              <div className="flex h-11 w-11 items-center justify-center rounded-full border border-border bg-white shadow-sm">
+                <img src="/assets/branding/logo-erp.png" alt="Logo ERP Bacaxita" className="h-9 w-9 rounded-full object-cover opacity-95 ring-1 ring-border/50" />
               </div>
               <p className="text-sm text-muted-foreground">Painel interno</p>
             </div>

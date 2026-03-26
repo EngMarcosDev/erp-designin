@@ -72,8 +72,8 @@ export function AppSidebar() {
       <div className="flex h-16 items-center justify-between px-4 border-b border-sidebar-border">
         {!isCollapsed && (
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-[hsl(28_40%_36%)]/20 border border-[hsl(28_40%_36%)]/35 flex items-center justify-center">
-              <img src="/assets/branding/logo-erp.png" alt="ERP Bacaxita" className="h-6 w-6 object-contain" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-full border border-[hsl(28_40%_36%)]/35 bg-[hsl(28_40%_36%)]/15 shadow-sm">
+              <img src="/assets/branding/logo-erp.png" alt="ERP Bacaxita" className="h-8 w-8 rounded-full object-cover ring-1 ring-white/60" />
             </div>
             <span className="font-bold text-sidebar-foreground">ERP Bacaxita</span>
           </div>

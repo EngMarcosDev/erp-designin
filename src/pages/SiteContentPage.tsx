@@ -276,6 +276,30 @@ export default function SiteContentPage() {
         </p>
       </div>
 
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card>
+          <CardContent className="pt-6">
+            <p className="text-sm text-muted-foreground">Banners ativos</p>
+            <p className="text-3xl font-bold">{banners.filter((item) => item.active).length}</p>
+            <p className="text-xs text-muted-foreground">Campanhas visiveis na vitrine de novidades.</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <p className="text-sm text-muted-foreground">Popups configurados</p>
+            <p className="text-3xl font-bold">{popups.length}</p>
+            <p className="text-xs text-muted-foreground">Primeiro popup, alarmes e novidades em uma fila ordenada.</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <p className="text-sm text-muted-foreground">Categorias gerenciadas</p>
+            <p className="text-3xl font-bold">{categories.length}</p>
+            <p className="text-xs text-muted-foreground">Controle de exibicao, slug e ordenacao do menu do site.</p>
+          </CardContent>
+        </Card>
+      </div>
+
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0">
           <div>
@@ -353,150 +377,181 @@ export default function SiteContentPage() {
           <CardDescription>Primeiro popup + alarmes + novidades.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label>Tipo</Label>
-              <Select value={popupForm.type} onValueChange={(value: ErpSitePopupType) => setPopupForm((p) => ({ ...p, type: value }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="FIRST">Primeiro popup</SelectItem>
-                  <SelectItem value="ALERT">Alarme</SelectItem>
-                  <SelectItem value="NEWS">Novidade</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Nivel</Label>
-              <Select value={popupForm.level} onValueChange={(value: ErpSitePopupLevel) => setPopupForm((p) => ({ ...p, level: value }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="INFO">Info</SelectItem>
-                  <SelectItem value="SUCCESS">Sucesso</SelectItem>
-                  <SelectItem value="WARNING">Aviso</SelectItem>
-                  <SelectItem value="ERROR">Erro</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+          <div className="grid gap-6 xl:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]">
+            <div className="space-y-4 rounded-2xl border p-4">
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label>Tipo</Label>
+                  <Select value={popupForm.type} onValueChange={(value: ErpSitePopupType) => setPopupForm((p) => ({ ...p, type: value }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="FIRST">Primeiro popup</SelectItem>
+                      <SelectItem value="ALERT">Alarme</SelectItem>
+                      <SelectItem value="NEWS">Novidade</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Nivel</Label>
+                  <Select value={popupForm.level} onValueChange={(value: ErpSitePopupLevel) => setPopupForm((p) => ({ ...p, level: value }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="INFO">Info</SelectItem>
+                      <SelectItem value="SUCCESS">Sucesso</SelectItem>
+                      <SelectItem value="WARNING">Aviso</SelectItem>
+                      <SelectItem value="ERROR">Erro</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
 
-          <div className="space-y-2">
-            <Label>Titulo</Label>
-            <Input value={popupForm.title} onChange={(e) => setPopupForm((p) => ({ ...p, title: e.target.value }))} />
-          </div>
-          <div className="space-y-2">
-            <Label>Mensagem</Label>
-            <Textarea rows={3} value={popupForm.message} onChange={(e) => setPopupForm((p) => ({ ...p, message: e.target.value }))} />
-          </div>
+              <div className="space-y-2">
+                <Label>Titulo</Label>
+                <Input value={popupForm.title} onChange={(e) => setPopupForm((p) => ({ ...p, title: e.target.value }))} />
+              </div>
+              <div className="space-y-2">
+                <Label>Mensagem</Label>
+                <Textarea rows={4} value={popupForm.message} onChange={(e) => setPopupForm((p) => ({ ...p, message: e.target.value }))} />
+              </div>
 
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label>Icone</Label>
-              <Select value={popupForm.iconKey} onValueChange={(value) => setPopupForm((p) => ({ ...p, iconKey: value }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {POPUP_ICONS.map((icon) => (
-                    <SelectItem key={icon.key} value={icon.key}>{icon.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Imagem URL (opcional)</Label>
-              <Input value={popupForm.imageUrl} onChange={(e) => setPopupForm((p) => ({ ...p, imageUrl: e.target.value }))} />
-            </div>
-          </div>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label>Icone</Label>
+                  <Select value={popupForm.iconKey} onValueChange={(value) => setPopupForm((p) => ({ ...p, iconKey: value }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {POPUP_ICONS.map((icon) => (
+                        <SelectItem key={icon.key} value={icon.key}>{icon.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Imagem URL (opcional)</Label>
+                  <Input value={popupForm.imageUrl} onChange={(e) => setPopupForm((p) => ({ ...p, imageUrl: e.target.value }))} />
+                </div>
+              </div>
 
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label>Texto do botao (opcional)</Label>
-              <Input
-                value={popupForm.buttonLabel}
-                onChange={(e) => setPopupForm((p) => ({ ...p, buttonLabel: e.target.value }))}
-                placeholder="Ex: Ver novidade"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>URL do botao (opcional)</Label>
-              <Input
-                value={popupForm.buttonUrl}
-                onChange={(e) => setPopupForm((p) => ({ ...p, buttonUrl: e.target.value }))}
-                placeholder="https://..."
-              />
-            </div>
-          </div>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label>Texto do botao (opcional)</Label>
+                  <Input
+                    value={popupForm.buttonLabel}
+                    onChange={(e) => setPopupForm((p) => ({ ...p, buttonLabel: e.target.value }))}
+                    placeholder="Ex: Ver novidade"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>URL do botao (opcional)</Label>
+                  <Input
+                    value={popupForm.buttonUrl}
+                    onChange={(e) => setPopupForm((p) => ({ ...p, buttonUrl: e.target.value }))}
+                    placeholder="https://..."
+                  />
+                </div>
+              </div>
 
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label>Inicio</Label>
-              <Input type="datetime-local" value={popupForm.startsAt} onChange={(e) => setPopupForm((p) => ({ ...p, startsAt: e.target.value }))} />
-            </div>
-            <div className="space-y-2">
-              <Label>Fim</Label>
-              <Input type="datetime-local" value={popupForm.endsAt} onChange={(e) => setPopupForm((p) => ({ ...p, endsAt: e.target.value }))} />
-            </div>
-          </div>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label>Inicio</Label>
+                  <Input type="datetime-local" value={popupForm.startsAt} onChange={(e) => setPopupForm((p) => ({ ...p, startsAt: e.target.value }))} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Fim</Label>
+                  <Input type="datetime-local" value={popupForm.endsAt} onChange={(e) => setPopupForm((p) => ({ ...p, endsAt: e.target.value }))} />
+                </div>
+              </div>
 
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label>Prioridade</Label>
-              <Input type="number" min="1" value={popupForm.priority} onChange={(e) => setPopupForm((p) => ({ ...p, priority: e.target.value }))} />
-            </div>
-            <div className="space-y-2">
-              <Label>Auto fechar (segundos)</Label>
-              <Input type="number" min="0" value={popupForm.displaySeconds} onChange={(e) => setPopupForm((p) => ({ ...p, displaySeconds: e.target.value }))} />
-            </div>
-          </div>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label>Prioridade</Label>
+                  <Input type="number" min="1" value={popupForm.priority} onChange={(e) => setPopupForm((p) => ({ ...p, priority: e.target.value }))} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Auto fechar (segundos)</Label>
+                  <Input type="number" min="0" value={popupForm.displaySeconds} onChange={(e) => setPopupForm((p) => ({ ...p, displaySeconds: e.target.value }))} />
+                </div>
+              </div>
 
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="flex items-center justify-between rounded-lg border p-3">
-              <span className="text-sm">Popup ativo</span>
-              <Switch checked={popupForm.isActive} onCheckedChange={(checked) => setPopupForm((p) => ({ ...p, isActive: checked }))} />
-            </div>
-            <div className="flex items-center justify-between rounded-lg border p-3">
-              <span className="text-sm">Pode fechar</span>
-              <Switch checked={popupForm.dismissible} onCheckedChange={(checked) => setPopupForm((p) => ({ ...p, dismissible: checked }))} />
-            </div>
-          </div>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="flex items-center justify-between rounded-lg border p-3">
+                  <span className="text-sm">Popup ativo</span>
+                  <Switch checked={popupForm.isActive} onCheckedChange={(checked) => setPopupForm((p) => ({ ...p, isActive: checked }))} />
+                </div>
+                <div className="flex items-center justify-between rounded-lg border p-3">
+                  <span className="text-sm">Pode fechar</span>
+                  <Switch checked={popupForm.dismissible} onCheckedChange={(checked) => setPopupForm((p) => ({ ...p, dismissible: checked }))} />
+                </div>
+              </div>
 
-          <div className="flex gap-2">
-            <Button className="gap-2" onClick={() => savePopup.mutate()} disabled={savePopup.isPending}>
-              <Save className="h-4 w-4" />
-              {editingPopupId ? "Atualizar popup" : "Criar popup"}
-            </Button>
-            <Button variant="outline" onClick={() => { setEditingPopupId(null); setPopupForm(DEFAULT_POPUP_FORM); }}>
-              Limpar
-            </Button>
-          </div>
+              <div className="flex gap-2">
+                <Button className="gap-2" onClick={() => savePopup.mutate()} disabled={savePopup.isPending}>
+                  <Save className="h-4 w-4" />
+                  {editingPopupId ? "Atualizar popup" : "Criar popup"}
+                </Button>
+                <Button variant="outline" onClick={() => { setEditingPopupId(null); setPopupForm(DEFAULT_POPUP_FORM); }}>
+                  Limpar
+                </Button>
+              </div>
+            </div>
 
-          <div className="space-y-2">
-            {popups.map((popup, index) => (
-              <div key={popup.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3">
-                <div className="flex items-center gap-3">
-                  <img src={popupIconUrl(popup)} alt={popup.title} className="h-10 w-10 rounded-full border object-cover" />
-                  <div>
-                    <p className="font-semibold">{popup.title}</p>
-                    <p className="text-sm text-muted-foreground whitespace-pre-line break-words">{popup.message}</p>
-                    <div className="flex gap-2 pt-1">
-                      <Badge variant="outline">{POPUP_TYPE_LABEL[popup.type]}</Badge>
-                      <Badge variant="secondary">{POPUP_LEVEL_LABEL[popup.level]}</Badge>
-                      <Badge variant={popup.isActive ? "default" : "secondary"}>{popup.isActive ? "Ativo" : "Inativo"}</Badge>
+            <div className="space-y-4">
+              <div className="rounded-2xl border p-4">
+                <p className="text-sm font-semibold uppercase tracking-[0.14em] text-muted-foreground">Preview rapido</p>
+                <div className="mt-4 rounded-2xl border bg-muted/20 p-4">
+                  <div className="flex items-start gap-3">
+                    <img
+                      src={popupForm.imageUrl.trim() || `/assets/status-icons/${popupForm.iconKey || "icon_padrao"}.png`}
+                      alt={popupForm.title || "Preview"}
+                      className="h-14 w-14 rounded-full border object-cover"
+                    />
+                    <div className="space-y-2">
+                      <div className="flex flex-wrap gap-2">
+                        <Badge variant="outline">{POPUP_TYPE_LABEL[popupForm.type]}</Badge>
+                        <Badge variant="secondary">{POPUP_LEVEL_LABEL[popupForm.level]}</Badge>
+                        <Badge variant={popupForm.isActive ? "default" : "secondary"}>{popupForm.isActive ? "Ativo" : "Inativo"}</Badge>
+                      </div>
+                      <p className="font-semibold">{popupForm.title || "Titulo do popup"}</p>
+                      <p className="whitespace-pre-line break-words text-sm text-muted-foreground">
+                        {popupForm.message || "Mensagem de exemplo para acompanhar melhor o que vai para o site."}
+                      </p>
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Button variant="outline" size="icon" disabled={index === 0} onClick={() => void movePopup(popup.id, "up")}><ArrowUp className="h-4 w-4" /></Button>
-                  <Button variant="outline" size="icon" disabled={index === popups.length - 1} onClick={() => void movePopup(popup.id, "down")}><ArrowDown className="h-4 w-4" /></Button>
-                  <Button variant="outline" size="sm" onClick={() => loadPopupToForm(popup)}><SquarePen className="mr-1 h-4 w-4" />Editar</Button>
-                  <Button variant="outline" size="sm" onClick={() => void toggleSitePopupStatus(popup.id, !popup.isActive).then(() => queryClient.invalidateQueries({ queryKey: ["erp", "site-popups"] }))}>
-                    {popup.isActive ? "Desativar" : "Ativar"}
-                  </Button>
-                  <Button variant="destructive" size="sm" onClick={() => void deactivateSitePopup(popup.id).then(() => queryClient.invalidateQueries({ queryKey: ["erp", "site-popups"] }))}>
-                    <Trash2 className="mr-1 h-4 w-4" />
-                    Desativar
-                  </Button>
-                </div>
               </div>
-            ))}
+
+              <div className="space-y-2 rounded-2xl border p-4">
+                <p className="text-sm font-semibold uppercase tracking-[0.14em] text-muted-foreground">Fila de popups</p>
+                {popups.map((popup, index) => (
+                  <div key={popup.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3">
+                    <div className="flex items-center gap-3">
+                      <img src={popupIconUrl(popup)} alt={popup.title} className="h-10 w-10 rounded-full border object-cover" />
+                      <div>
+                        <p className="font-semibold">{popup.title}</p>
+                        <p className="text-sm text-muted-foreground whitespace-pre-line break-words">{popup.message}</p>
+                        <div className="flex gap-2 pt-1">
+                          <Badge variant="outline">{POPUP_TYPE_LABEL[popup.type]}</Badge>
+                          <Badge variant="secondary">{POPUP_LEVEL_LABEL[popup.level]}</Badge>
+                          <Badge variant={popup.isActive ? "default" : "secondary"}>{popup.isActive ? "Ativo" : "Inativo"}</Badge>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button variant="outline" size="icon" disabled={index === 0} onClick={() => void movePopup(popup.id, "up")}><ArrowUp className="h-4 w-4" /></Button>
+                      <Button variant="outline" size="icon" disabled={index === popups.length - 1} onClick={() => void movePopup(popup.id, "down")}><ArrowDown className="h-4 w-4" /></Button>
+                      <Button variant="outline" size="sm" onClick={() => loadPopupToForm(popup)}><SquarePen className="mr-1 h-4 w-4" />Editar</Button>
+                      <Button variant="outline" size="sm" onClick={() => void toggleSitePopupStatus(popup.id, !popup.isActive).then(() => queryClient.invalidateQueries({ queryKey: ["erp", "site-popups"] }))}>
+                        {popup.isActive ? "Desativar" : "Ativar"}
+                      </Button>
+                      <Button variant="destructive" size="sm" onClick={() => void deactivateSitePopup(popup.id).then(() => queryClient.invalidateQueries({ queryKey: ["erp", "site-popups"] }))}>
+                        <Trash2 className="mr-1 h-4 w-4" />
+                        Desativar
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -507,65 +562,69 @@ export default function SiteContentPage() {
           <CardDescription>Cadastrar e ordenar categorias.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label>Nome</Label>
-              <Input value={categoryForm.name} onChange={(e) => setCategoryForm((c) => ({ ...c, name: e.target.value }))} />
-            </div>
-            <div className="space-y-2">
-              <Label>Slug (opcional)</Label>
-              <Input value={categoryForm.slug} onChange={(e) => setCategoryForm((c) => ({ ...c, slug: e.target.value }))} />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label>Descricao</Label>
-            <Textarea rows={2} value={categoryForm.description} onChange={(e) => setCategoryForm((c) => ({ ...c, description: e.target.value }))} />
-          </div>
-          <div className="space-y-2">
-            <Label>Imagem URL (opcional)</Label>
-            <Input value={categoryForm.image} onChange={(e) => setCategoryForm((c) => ({ ...c, image: e.target.value }))} />
-          </div>
-          <div className="flex items-center justify-between rounded-lg border p-3">
-            <span className="text-sm">Categoria ativa</span>
-            <Switch checked={categoryForm.isActive} onCheckedChange={(checked) => setCategoryForm((c) => ({ ...c, isActive: checked }))} />
-          </div>
-          <div className="flex gap-2">
-            <Button className="gap-2" onClick={() => saveCategory.mutate()} disabled={saveCategory.isPending}>
-              <Save className="h-4 w-4" />
-              {editingCategoryId ? "Atualizar categoria" : "Criar categoria"}
-            </Button>
-            <Button variant="outline" onClick={() => { setEditingCategoryId(null); setCategoryForm(DEFAULT_CATEGORY_FORM); }}>
-              Limpar
-            </Button>
-          </div>
-
-          <div className="space-y-2">
-            {categories.map((category, index) => (
-              <div key={category.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3">
-                <div>
-                  <p className="font-semibold">{category.name}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {category.slug} | {category._count?.products ?? 0} produto(s)
-                  </p>
+          <div className="grid gap-6 xl:grid-cols-[minmax(0,0.95fr)_minmax(320px,1.05fr)]">
+            <div className="space-y-4 rounded-2xl border p-4">
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label>Nome</Label>
+                  <Input value={categoryForm.name} onChange={(e) => setCategoryForm((c) => ({ ...c, name: e.target.value }))} />
                 </div>
-                <div className="flex items-center gap-2">
-                  <Badge variant={category.isActive ? "default" : "secondary"}>{category.isActive ? "Ativa" : "Inativa"}</Badge>
-                  <Button variant="outline" size="icon" disabled={index === 0} onClick={() => void moveCategory(category.id, "up")}><ArrowUp className="h-4 w-4" /></Button>
-                  <Button variant="outline" size="icon" disabled={index === categories.length - 1} onClick={() => void moveCategory(category.id, "down")}><ArrowDown className="h-4 w-4" /></Button>
-                  <Button variant="outline" size="sm" onClick={() => loadCategoryToForm(category)}><SquarePen className="mr-1 h-4 w-4" />Editar</Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() =>
-                      void toggleCategoryStatus(category.id, !(category.isActive !== false))
-                        .then(() => queryClient.invalidateQueries({ queryKey: ["erp", "categories-manage"] }))
-                    }
-                  >
-                    {category.isActive ? "Desativar" : "Ativar"}
-                  </Button>
+                <div className="space-y-2">
+                  <Label>Slug (opcional)</Label>
+                  <Input value={categoryForm.slug} onChange={(e) => setCategoryForm((c) => ({ ...c, slug: e.target.value }))} />
                 </div>
               </div>
-            ))}
+              <div className="space-y-2">
+                <Label>Descricao</Label>
+                <Textarea rows={2} value={categoryForm.description} onChange={(e) => setCategoryForm((c) => ({ ...c, description: e.target.value }))} />
+              </div>
+              <div className="space-y-2">
+                <Label>Imagem URL (opcional)</Label>
+                <Input value={categoryForm.image} onChange={(e) => setCategoryForm((c) => ({ ...c, image: e.target.value }))} />
+              </div>
+              <div className="flex items-center justify-between rounded-lg border p-3">
+                <span className="text-sm">Categoria ativa</span>
+                <Switch checked={categoryForm.isActive} onCheckedChange={(checked) => setCategoryForm((c) => ({ ...c, isActive: checked }))} />
+              </div>
+              <div className="flex gap-2">
+                <Button className="gap-2" onClick={() => saveCategory.mutate()} disabled={saveCategory.isPending}>
+                  <Save className="h-4 w-4" />
+                  {editingCategoryId ? "Atualizar categoria" : "Criar categoria"}
+                </Button>
+                <Button variant="outline" onClick={() => { setEditingCategoryId(null); setCategoryForm(DEFAULT_CATEGORY_FORM); }}>
+                  Limpar
+                </Button>
+              </div>
+            </div>
+
+            <div className="space-y-2 rounded-2xl border p-4">
+              {categories.map((category, index) => (
+                <div key={category.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3">
+                  <div>
+                    <p className="font-semibold">{category.name}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {category.slug} | {category._count?.products ?? 0} produto(s)
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant={category.isActive ? "default" : "secondary"}>{category.isActive ? "Ativa" : "Inativa"}</Badge>
+                    <Button variant="outline" size="icon" disabled={index === 0} onClick={() => void moveCategory(category.id, "up")}><ArrowUp className="h-4 w-4" /></Button>
+                    <Button variant="outline" size="icon" disabled={index === categories.length - 1} onClick={() => void moveCategory(category.id, "down")}><ArrowDown className="h-4 w-4" /></Button>
+                    <Button variant="outline" size="sm" onClick={() => loadCategoryToForm(category)}><SquarePen className="mr-1 h-4 w-4" />Editar</Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        void toggleCategoryStatus(category.id, !(category.isActive !== false))
+                          .then(() => queryClient.invalidateQueries({ queryKey: ["erp", "categories-manage"] }))
+                      }
+                    >
+                      {category.isActive ? "Desativar" : "Ativar"}
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </CardContent>
       </Card>
