@@ -37,8 +37,8 @@ export function AppSidebar() {
       <div className="flex h-16 items-center justify-between px-4 border-b border-sidebar-border">
         {!isCollapsed && (
           <div className="flex items-center gap-3">
-            <img src="/assets/branding/logo-circle.svg" alt="Abacaxita" className="h-8 w-8 object-contain" />
-            <span className="font-bold text-sidebar-foreground">Abacaxita</span>
+            <img src="/assets/branding/logo-erp.png" alt="ERP Bacaxita" className="h-9 w-9 object-contain" />
+            <span className="font-bold text-sidebar-foreground">ERP Bacaxita</span>
           </div>
         )}
         <SidebarTrigger className="text-sidebar-foreground hover:bg-sidebar-accent rounded-md p-2" />

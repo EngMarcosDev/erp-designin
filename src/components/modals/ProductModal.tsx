@@ -493,12 +493,13 @@ export function ProductModal({ open, onClose, productId, initialMode = "product"
   return (
     <>
       <Dialog open={open} onOpenChange={onClose}>
-        <DialogContent className="sm:max-w-2xl">
-          <DialogHeader className="dialog-titlebar -mx-6 -mt-6 px-6 pt-6 pb-4 rounded-t-lg">
+        <DialogContent className="max-h-[92vh] overflow-hidden p-0 sm:max-w-3xl">
+          <DialogHeader className="dialog-titlebar shrink-0 px-6 pt-6 pb-4 rounded-t-lg">
             <DialogTitle>{isEditing ? "Editar Produto" : isBannerIntent ? "Novo Banner" : "Novo Produto"}</DialogTitle>
           </DialogHeader>
 
-          <form onSubmit={handleSubmit} className="space-y-4 pt-2">
+          <form onSubmit={handleSubmit} className="flex min-h-0 flex-col">
+            <div className="space-y-4 overflow-y-auto px-6 py-4">
             <div className="space-y-2">
               <Label htmlFor="name">Nome do Produto</Label>
               <Input
@@ -841,8 +842,9 @@ export function ProductModal({ open, onClose, productId, initialMode = "product"
                 onCheckedChange={(checked) => setFormData((previous) => ({ ...previous, active: checked }))}
               />
             </div>
+            </div>
 
-            <DialogFooter className="gap-2 sm:gap-0">
+            <DialogFooter className="shrink-0 gap-2 border-t border-border bg-background px-6 py-4 sm:gap-0">
               <Button type="button" variant="outline" onClick={onClose}>
                 Cancelar
               </Button>
@@ -855,7 +857,7 @@ export function ProductModal({ open, onClose, productId, initialMode = "product"
       </Dialog>
 
       <Dialog open={editorOpen} onOpenChange={setEditorOpen}>
-        <DialogContent className="sm:max-w-xl">
+        <DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-xl">
           <DialogHeader className="dialog-titlebar -mx-6 -mt-6 px-6 pt-6 pb-4 rounded-t-lg">
             <DialogTitle>Ajustar Imagem</DialogTitle>
           </DialogHeader>

@@ -120,7 +120,7 @@ const toIsoOrNull = (value: string) => {
 const popupIconUrl = (popup: ErpSitePopup) =>
   popup.imageUrl?.trim()
     ? popup.imageUrl
-    : `/assets/Abacaxita/Icons/${popup.iconKey || "icon_padrao"}.PNG`;
+    : `/assets/status-icons/${popup.iconKey || "icon_padrao"}.png`;
 
 export default function SiteContentPage() {
   const queryClient = useQueryClient();
@@ -475,7 +475,7 @@ export default function SiteContentPage() {
                   <img src={popupIconUrl(popup)} alt={popup.title} className="h-10 w-10 rounded-full border object-cover" />
                   <div>
                     <p className="font-semibold">{popup.title}</p>
-                    <p className="text-sm text-muted-foreground">{popup.message}</p>
+                    <p className="text-sm text-muted-foreground whitespace-pre-line break-words">{popup.message}</p>
                     <div className="flex gap-2 pt-1">
                       <Badge variant="outline">{POPUP_TYPE_LABEL[popup.type]}</Badge>
                       <Badge variant="secondary">{POPUP_LEVEL_LABEL[popup.level]}</Badge>

@@ -61,10 +61,10 @@ export default function LoginPage() {
           <div className="absolute top-0 left-0 right-0 h-1 gradient-bar" />
         </div>
         <div className="text-center z-10">
-          <div className="w-32 h-32 rounded-2xl bg-[hsl(35,80%,55%)] flex items-center justify-center mx-auto mb-6 shadow-2xl">
-            <span className="text-6xl font-bold text-[hsl(30,20%,15%)]">B</span>
+          <div className="w-32 h-32 rounded-2xl bg-[hsl(35,80%,55%)]/12 border border-[hsl(35,80%,55%)]/30 flex items-center justify-center mx-auto mb-6 shadow-2xl backdrop-blur-sm">
+            <img src="/assets/branding/logo-erp.png" alt="ERP Bacaxita" className="h-24 w-24 object-contain" />
           </div>
-          <h1 className="text-5xl font-bold text-[hsl(35,25%,92%)] mb-2">Abacaxita</h1>
+          <h1 className="text-5xl font-bold text-[hsl(35,25%,92%)] mb-2">ERP Bacaxita</h1>
           <p className="text-lg text-[hsl(35,25%,92%)]/60">Sistema de Gestao ERP</p>
         </div>
       </div>
@@ -72,16 +72,16 @@ export default function LoginPage() {
       <div className="flex-1 flex items-center justify-center p-8 bg-background">
         <div className="w-full max-w-md">
           <div className="lg:hidden text-center mb-8">
-            <div className="w-20 h-20 rounded-xl bg-primary flex items-center justify-center mx-auto mb-4">
-              <span className="text-3xl font-bold text-primary-foreground">B</span>
+            <div className="w-20 h-20 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto mb-4">
+              <img src="/assets/branding/logo-erp.png" alt="ERP Bacaxita" className="h-14 w-14 object-contain" />
             </div>
-            <h1 className="text-2xl font-bold text-foreground">Abacaxita</h1>
+            <h1 className="text-2xl font-bold text-foreground">ERP Bacaxita</h1>
           </div>
 
           <Card className="border-0 shadow-lg">
             <CardContent className="pt-6 pb-8 px-8">
               <div className="mb-4 text-center">
-                <h2 className="text-2xl font-bold text-foreground tracking-wide">Abacaxita</h2>
+                <h2 className="text-2xl font-bold text-foreground tracking-wide">ERP Bacaxita</h2>
                 <p className="text-sm text-muted-foreground mt-1">Faca login para continuar</p>
               </div>
 
