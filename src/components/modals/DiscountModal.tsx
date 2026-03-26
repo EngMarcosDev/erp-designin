@@ -1,7 +1,9 @@
 import { useMemo, useState } from 'react';
+import { Search } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
+  DialogBody,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -34,6 +36,7 @@ export function DiscountModal({ open, onClose }: DiscountModalProps) {
   const [discountMode, setDiscountMode] = useState<DiscountMode>('percent');
   const [selectedCategory, setSelectedCategory] = useState<Category | ''>('');
   const [selectedProductId, setSelectedProductId] = useState<string>('');
+  const [productSearch, setProductSearch] = useState('');
   const [value, setValue] = useState('');
   const [label, setLabel] = useState('Oferta especial');
   const [isLoading, setIsLoading] = useState(false);
@@ -45,6 +48,13 @@ export function DiscountModal({ open, onClose }: DiscountModalProps) {
         .filter((product) => product.active)
         .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR')),
     [products]
+  );
+  const filteredProductOptions = useMemo(
+    () =>
+      productOptions.filter((product) =>
+        product.name.toLowerCase().includes(productSearch.trim().toLowerCase())
+      ),
+    [productOptions, productSearch]
   );
 
   const selectedProducts = useMemo(() => {
@@ -143,12 +153,12 @@ export function DiscountModal({ open, onClose }: DiscountModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-h-[88vh] sm:max-w-lg">
+      <DialogContent className="max-h-[90vh] sm:max-w-lg">
         <DialogHeader className="dialog-titlebar -mx-6 -mt-6 px-6 pt-6 pb-4 rounded-t-lg">
           <DialogTitle>Novo Desconto</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4 pt-2">
+        <DialogBody className="space-y-4 pt-2">
           <div className="space-y-2">
             <Label>Aplicar em</Label>
             <Select value={scopeMode} onValueChange={(value: ScopeMode) => setScopeMode(value)}>
@@ -184,16 +194,31 @@ export function DiscountModal({ open, onClose }: DiscountModalProps) {
           ) : (
             <div className="space-y-2">
               <Label>Produto</Label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={productSearch}
+                  onChange={(event) => setProductSearch(event.target.value)}
+                  placeholder="Pesquisar produto para desconto"
+                  className="pl-10"
+                />
+              </div>
               <Select value={selectedProductId || undefined} onValueChange={setSelectedProductId}>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione um produto" />
                 </SelectTrigger>
                 <SelectContent>
-                  {productOptions.map((product) => (
-                    <SelectItem key={product.id} value={product.id}>
-                      {product.name}
-                    </SelectItem>
-                  ))}
+                  {filteredProductOptions.length === 0 ? (
+                    <div className="px-3 py-2 text-sm text-muted-foreground">
+                      Nenhum produto encontrado.
+                    </div>
+                  ) : (
+                    filteredProductOptions.map((product) => (
+                      <SelectItem key={product.id} value={product.id}>
+                        {product.name}
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -236,7 +261,7 @@ export function DiscountModal({ open, onClose }: DiscountModalProps) {
               Produtos afetados agora: {selectedProducts.length}
             </p>
           </div>
-        </div>
+        </DialogBody>
 
         <DialogFooter className="gap-2 sm:gap-0">
           <Button variant="outline" type="button" onClick={onClose}>

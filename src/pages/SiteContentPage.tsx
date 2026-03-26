@@ -306,12 +306,12 @@ export default function SiteContentPage() {
       </div>
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0">
+        <CardHeader className="flex flex-col gap-4 space-y-0 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <CardTitle className="text-xl">Banners</CardTitle>
             <CardDescription>Botao de Novo Banner movido para esta aba.</CardDescription>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex w-full flex-wrap items-center justify-between gap-2 sm:w-auto sm:justify-end">
             <Button
               variant="ghost"
               size="icon"
@@ -386,7 +386,7 @@ export default function SiteContentPage() {
       </Card>
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0">
+        <CardHeader className="flex flex-col gap-4 space-y-0 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <CardTitle className="text-xl">Popups</CardTitle>
             <CardDescription>Primeiro popup + alarmes + novidades.</CardDescription>
@@ -580,7 +580,7 @@ export default function SiteContentPage() {
       </Card>
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0">
+        <CardHeader className="flex flex-col gap-4 space-y-0 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <CardTitle className="text-xl">Categorias</CardTitle>
             <CardDescription>Cadastrar e ordenar categorias.</CardDescription>

@@ -2,6 +2,7 @@
 import {
   Dialog,
   DialogContent,
+  DialogBody,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -169,7 +170,8 @@ export function UserModal({ open, onClose, userId }: UserModalProps) {
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4 pt-2">
+        <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+          <DialogBody className="space-y-4 pt-2">
           {/* Avatar Upload (top) */}
           <div className="flex items-center gap-3 pb-2">
             <Avatar className="h-16 w-16">
@@ -310,6 +312,7 @@ export function UserModal({ open, onClose, userId }: UserModalProps) {
               onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, active: checked }))}
             />
           </div>
+          </DialogBody>
 
           <DialogFooter className="gap-2 sm:gap-0">
             <Button type="button" variant="outline" onClick={onClose}>Cancelar</Button>

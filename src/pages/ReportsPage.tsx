@@ -24,6 +24,7 @@ import {
 } from '@/components/ui/select';
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogHeader,
   DialogTitle,
@@ -515,7 +516,7 @@ export default function RelatoriosPage() {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4">
+          <DialogBody className="space-y-4">
             {showCategoryFilter && (
               <div className="grid grid-cols-1 gap-3">
                 <div className="space-y-2">
@@ -595,7 +596,7 @@ export default function RelatoriosPage() {
             <div className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-lg">
               {getFilteredData().length} registro(s) encontrado(s) com os filtros atuais.
             </div>
-          </div>
+          </DialogBody>
 
           <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="outline" onClick={() => setExportModalOpen(false)}>

@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/table";
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogHeader,
   DialogTitle,
@@ -670,7 +671,7 @@ export default function EstoquePage() {
       )}
 
       <Dialog open={isComparisonOpen} onOpenChange={setIsComparisonOpen}>
-        <DialogContent className="max-h-[88vh] max-w-5xl overflow-y-auto">
+        <DialogContent className="max-h-[90vh] max-w-5xl">
           <DialogHeader className="dialog-titlebar -mx-6 -mt-6 rounded-t-lg px-6 pb-4 pt-6">
             <DialogTitle className="flex items-center gap-2">
               <ArrowLeftRight className="h-5 w-5" />
@@ -681,77 +682,79 @@ export default function EstoquePage() {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="flex flex-wrap justify-end gap-2 pt-2">
-            <Button variant="outline" size="sm" onClick={handleRefreshComparison} disabled={isRefreshing} className="gap-2">
-              <RefreshCw className={cn("h-4 w-4", isRefreshing && "animate-spin")} />
-              Atualizar
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => void syncFromHeadshop()}>
-              Puxar do HeadShop
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => void syncToHeadshop()}>
-              Enviar para HeadShop
-            </Button>
-          </div>
+          <DialogBody className="space-y-4 pt-2">
+            <div className="flex flex-wrap justify-end gap-2">
+              <Button variant="outline" size="sm" onClick={handleRefreshComparison} disabled={isRefreshing} className="gap-2">
+                <RefreshCw className={cn("h-4 w-4", isRefreshing && "animate-spin")} />
+                Atualizar
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => void syncFromHeadshop()}>
+                Puxar do HeadShop
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => void syncToHeadshop()}>
+                Enviar para HeadShop
+              </Button>
+            </div>
 
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Produto</TableHead>
-                <TableHead className="text-center">ERP</TableHead>
-                <TableHead className="text-center">HeadShop</TableHead>
-                <TableHead className="text-center">Divergencia</TableHead>
-                <TableHead className="text-center">Contagem real</TableHead>
-                <TableHead className="text-right">Acoes</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {comparisonRows.map((item) => (
-                <TableRow
-                  key={item.productId}
-                  className={cn(item.difference > 0 && "bg-status-success/5", item.difference < 0 && "bg-status-warning/10")}
-                >
-                  <TableCell className="font-medium">{item.productName}</TableCell>
-                  <TableCell className="text-center font-semibold text-status-success">{item.erpStock}</TableCell>
-                  <TableCell className="text-center font-semibold text-status-warning">{item.headshopStock}</TableCell>
-                  <TableCell className="text-center">
-                    <Badge
-                      variant={item.difference === 0 ? "secondary" : "outline"}
-                      className={cn(
-                        item.difference > 0 && "border-status-success/40 text-status-success",
-                        item.difference < 0 && "border-status-warning/40 text-status-warning"
-                      )}
-                    >
-                      {item.difference > 0 ? `+${item.difference}` : item.difference}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <Input
-                      type="number"
-                      min="0"
-                      className="mx-auto w-24 text-center"
-                      value={realCounts[item.productId] ?? ""}
-                      onChange={(event) => setCountValue(item.productId, event.target.value)}
-                      placeholder={String(item.erpStock)}
-                    />
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button variant="outline" size="sm" onClick={() => void syncFromHeadshop()}>
-                        Puxar
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={() => void syncToHeadshop()}>
-                        Enviar
-                      </Button>
-                      <Button size="sm" onClick={() => void applyRealCount(item.productId)}>
-                        Atualizar ERP
-                      </Button>
-                    </div>
-                  </TableCell>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Produto</TableHead>
+                  <TableHead className="text-center">ERP</TableHead>
+                  <TableHead className="text-center">HeadShop</TableHead>
+                  <TableHead className="text-center">Divergencia</TableHead>
+                  <TableHead className="text-center">Contagem real</TableHead>
+                  <TableHead className="text-right">Acoes</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {comparisonRows.map((item) => (
+                  <TableRow
+                    key={item.productId}
+                    className={cn(item.difference > 0 && "bg-status-success/5", item.difference < 0 && "bg-status-warning/10")}
+                  >
+                    <TableCell className="font-medium">{item.productName}</TableCell>
+                    <TableCell className="text-center font-semibold text-status-success">{item.erpStock}</TableCell>
+                    <TableCell className="text-center font-semibold text-status-warning">{item.headshopStock}</TableCell>
+                    <TableCell className="text-center">
+                      <Badge
+                        variant={item.difference === 0 ? "secondary" : "outline"}
+                        className={cn(
+                          item.difference > 0 && "border-status-success/40 text-status-success",
+                          item.difference < 0 && "border-status-warning/40 text-status-warning"
+                        )}
+                      >
+                        {item.difference > 0 ? `+${item.difference}` : item.difference}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Input
+                        type="number"
+                        min="0"
+                        className="mx-auto w-24 text-center"
+                        value={realCounts[item.productId] ?? ""}
+                        onChange={(event) => setCountValue(item.productId, event.target.value)}
+                        placeholder={String(item.erpStock)}
+                      />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <Button variant="outline" size="sm" onClick={() => void syncFromHeadshop()}>
+                          Puxar
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => void syncToHeadshop()}>
+                          Enviar
+                        </Button>
+                        <Button size="sm" onClick={() => void applyRealCount(item.productId)}>
+                          Atualizar ERP
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </DialogBody>
         </DialogContent>
       </Dialog>
     </div>

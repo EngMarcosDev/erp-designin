@@ -256,6 +256,16 @@
     background: var(--popup-header);
   }
 
+  .dialog-scroll-area {
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable both-edges;
+    touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
+  }
+
   /* Hover animation for report links */
   @keyframes reportGlow {
     0% { color: hsl(var(--rasta-green)); }

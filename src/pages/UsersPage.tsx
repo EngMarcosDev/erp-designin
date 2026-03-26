@@ -28,7 +28,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogBody, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -678,7 +678,7 @@ export default function UsuariosPage() {
               Permissoes - {permissionsModal.userName}
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 pt-2">
+          <DialogBody className="space-y-4 pt-2">
             <div className="space-y-2">
               <Label>Papel</Label>
               <Select value={permissionsModal.role} onValueChange={(value: UserRole) => setPermissionsModal((previous) => ({ ...previous, role: value }))}>
@@ -720,7 +720,7 @@ export default function UsuariosPage() {
                 onCheckedChange={(checked) => setPermissionsModal((previous) => ({ ...previous, active: checked }))}
               />
             </div>
-          </div>
+          </DialogBody>
           <DialogFooter>
             <Button
               variant="outline"
@@ -750,7 +750,7 @@ export default function UsuariosPage() {
               Alterar senha
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 pt-2">
+          <DialogBody className="space-y-4 pt-2">
             <p className="text-sm text-muted-foreground">
               Alterando senha de <strong>{passwordModal.userName}</strong>
             </p>
@@ -774,7 +774,7 @@ export default function UsuariosPage() {
                 </Button>
               </div>
             </div>
-          </div>
+          </DialogBody>
           <DialogFooter>
             <Button
               variant="outline"
@@ -800,12 +800,12 @@ export default function UsuariosPage() {
           <DialogHeader className="dialog-titlebar -mx-6 -mt-6 rounded-t-lg px-6 pb-4 pt-6">
             <DialogTitle>Excluir usuario</DialogTitle>
           </DialogHeader>
-          <div className="space-y-3 pt-2 text-sm text-muted-foreground">
+          <DialogBody className="space-y-3 pt-2 text-sm text-muted-foreground">
             <p>
               Voce tem certeza que deseja excluir <strong className="text-foreground">{deleteModal.userName}</strong>?
             </p>
             <p className="text-xs">Esta acao remove definitivamente o usuario do sistema.</p>
-          </div>
+          </DialogBody>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteModal({ open: false, userId: null, userName: "" })}>
               Cancelar

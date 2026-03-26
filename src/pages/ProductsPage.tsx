@@ -22,6 +22,7 @@ import { toast } from 'sonner';
 import { Switch } from '@/components/ui/switch';
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -479,7 +480,8 @@ export default function ProdutosPage() {
           <DialogHeader className="dialog-titlebar -mx-6 -mt-6 px-6 pt-6 pb-4 rounded-t-lg">
             <DialogTitle>{previewImage?.name}</DialogTitle>
           </DialogHeader>
-          <div className="flex items-center justify-center p-4 bg-muted/30 rounded-lg min-h-[300px]">
+          <DialogBody className="pt-2">
+          <div className="flex min-h-[300px] items-center justify-center rounded-lg bg-muted/30 p-4">
             {previewImage && (
               <img
                 src={previewImage.url}
@@ -491,6 +493,7 @@ export default function ProdutosPage() {
               />
             )}
           </div>
+          </DialogBody>
         </DialogContent>
       </Dialog>
 
@@ -506,7 +509,7 @@ export default function ProdutosPage() {
             <DialogDescription className="sr-only">Confirmacao de exclusao de produto</DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-3 pt-2 text-sm text-muted-foreground">
+          <DialogBody className="space-y-3 pt-2 text-sm text-muted-foreground">
             {deleteState.step === 1 ? (
               <p>
                 Voce tem certeza que deseja excluir{' '}
@@ -518,7 +521,7 @@ export default function ProdutosPage() {
                 <strong className="text-foreground">{deleteState.productName}</strong>?
               </p>
             )}
-          </div>
+          </DialogBody>
 
           <DialogFooter className="gap-2 sm:gap-0">
             {deleteState.step === 1 ? (

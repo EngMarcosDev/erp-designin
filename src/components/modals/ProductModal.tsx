@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import {
   Dialog,
   DialogContent,
+  DialogBody,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -502,13 +503,13 @@ export function ProductModal({ open, onClose, productId, initialMode = "product"
   return (
     <>
       <Dialog open={open} onOpenChange={onClose}>
-        <DialogContent className="max-h-[92vh] overflow-hidden p-0 sm:max-w-3xl">
+        <DialogContent className="max-h-[94vh] p-0 sm:max-w-4xl xl:max-w-5xl">
           <DialogHeader className="dialog-titlebar shrink-0 px-6 pt-6 pb-4 rounded-t-lg">
             <DialogTitle>{isEditing ? "Editar Produto" : isBannerIntent ? "Novo Banner" : "Novo Produto"}</DialogTitle>
           </DialogHeader>
 
-          <form onSubmit={handleSubmit} className="flex min-h-0 flex-col">
-            <div className="space-y-4 overflow-y-scroll px-6 py-4">
+          <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+            <DialogBody className="space-y-4 px-6 py-4">
             <div className="space-y-2">
               <Label htmlFor="name">Nome do Produto</Label>
               <Input
@@ -880,7 +881,7 @@ export function ProductModal({ open, onClose, productId, initialMode = "product"
                 onCheckedChange={(checked) => setFormData((previous) => ({ ...previous, active: checked }))}
               />
             </div>
-            </div>
+            </DialogBody>
 
             <DialogFooter className="shrink-0 gap-2 border-t border-border bg-background px-6 py-4 sm:gap-0">
               <Button type="button" variant="outline" onClick={onClose}>
@@ -895,15 +896,15 @@ export function ProductModal({ open, onClose, productId, initialMode = "product"
       </Dialog>
 
       <Dialog open={editorOpen} onOpenChange={setEditorOpen}>
-        <DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-xl">
+        <DialogContent className="max-h-[94vh] p-0 sm:max-w-5xl">
           <DialogHeader className="dialog-titlebar -mx-6 -mt-6 px-6 pt-6 pb-4 rounded-t-lg">
             <DialogTitle>Ajustar Imagem</DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-4 pt-2">
+          <DialogBody className="space-y-4 px-6 py-4">
             <div
               ref={previewRef}
-              className="relative mx-auto h-72 w-72 touch-none overflow-hidden rounded-xl border border-border bg-muted/30"
+              className="relative mx-auto aspect-square w-full max-w-[540px] touch-none overflow-hidden rounded-[28px] border border-border bg-muted/30 shadow-sm"
               onPointerDown={handlePreviewPointerDown}
               onPointerMove={handlePreviewPointerMove}
               onPointerUp={handlePreviewPointerUp}
@@ -935,9 +936,9 @@ export function ProductModal({ open, onClose, productId, initialMode = "product"
                   ) : null}
                 </>
               ) : null}
-              <div className="pointer-events-none absolute bottom-2 left-1/2 -translate-x-1/2 rounded-full bg-black/45 px-2 py-1 text-[10px] uppercase tracking-[0.12em] text-white">
+              <div className="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full bg-black/45 px-3 py-1.5 text-[10px] uppercase tracking-[0.12em] text-white">
                 <Move className="mr-1 inline-block h-3 w-3" />
-                Arraste ou toque para alinhar
+                Arraste, toque ou use o scroll para zoom
               </div>
             </div>
 
@@ -1015,9 +1016,9 @@ export function ProductModal({ open, onClose, productId, initialMode = "product"
             </div>
 
             <p className="text-xs text-muted-foreground">
-              O ajuste aplica corte quadrado com preview em tempo real. Use clique/toque para precisao e arraste para ajuste fino.
+              O ajuste aplica corte quadrado com preview em tempo real. Role o mouse sobre a imagem para zoom e arraste para ajuste fino.
             </p>
-          </div>
+          </DialogBody>
 
           <DialogFooter className="gap-2 sm:gap-0">
             <Button type="button" variant="outline" onClick={() => setEditorOpen(false)}>
