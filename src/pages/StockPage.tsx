@@ -7,7 +7,6 @@ import {
   Download,
   Upload,
   ClipboardCheck,
-  LayoutGrid,
   Sheet,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -33,11 +32,11 @@ import {
 } from "@/components/ui/dialog";
 import { useERP } from "@/contexts/ERPContext";
 import { useUISettings } from "@/contexts/UISettingsContext";
-import { CATEGORY_COLORS, CATEGORY_LABELS, Category } from "@/types/erp";
+import { CATEGORY_LABELS, Category } from "@/types/erp";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
-type ViewMode = "cards" | "spreadsheet";
+const PAGE_SIZE_OPTIONS = [10, 25, 50] as const;
 
 const parseCsvRow = (line: string) => {
   const cells: string[] = [];
@@ -80,7 +79,7 @@ const escapeCsv = (value: string | number | boolean | null | undefined) => {
 export default function EstoquePage() {
   const { products, stockComparison, refreshStockComparison, syncToHeadshop, syncFromHeadshop, updateProduct } =
     useERP();
-  const { lowStockThreshold, preferStockSpreadsheet, compactTables } = useUISettings();
+  const { lowStockThreshold, compactTables } = useUISettings();
   const importInputRef = useRef<HTMLInputElement>(null);
 
   const [isComparisonOpen, setIsComparisonOpen] = useState(false);
@@ -91,11 +90,8 @@ export default function EstoquePage() {
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [realCounts, setRealCounts] = useState<Record<string, string>>({});
-  const [viewMode, setViewMode] = useState<ViewMode>(preferStockSpreadsheet ? "spreadsheet" : "cards");
-
-  useEffect(() => {
-    setViewMode(preferStockSpreadsheet ? "spreadsheet" : "cards");
-  }, [preferStockSpreadsheet]);
+  const [pageSize, setPageSize] = useState<number>(10);
+  const [page, setPage] = useState<number>(1);
 
   const categoryOptions = useMemo(
     () =>
@@ -127,10 +123,24 @@ export default function EstoquePage() {
     .filter((product) => product.category !== "banners")
     .reduce((sum, product) => sum + product.stock, 0);
   const itemsWithDifference = stockComparison.filter((item) => item.difference !== 0);
-  const allFilteredSelected =
-    filteredProducts.length > 0 && filteredProducts.every((product) => selectedIds.includes(product.id));
-
   const selectedProducts = filteredProducts.filter((product) => selectedIds.includes(product.id));
+  const totalPages = Math.max(1, Math.ceil(filteredProducts.length / pageSize));
+  const pagedProducts = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return filteredProducts.slice(start, start + pageSize);
+  }, [filteredProducts, page, pageSize]);
+  const allVisibleSelected =
+    pagedProducts.length > 0 && pagedProducts.every((product) => selectedIds.includes(product.id));
+
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm, categoryFilter, statusFilter, pageSize]);
+
+  useEffect(() => {
+    if (page > totalPages) {
+      setPage(totalPages);
+    }
+  }, [page, totalPages]);
 
   const handleRefreshComparison = async () => {
     setIsRefreshing(true);
@@ -145,7 +155,12 @@ export default function EstoquePage() {
   };
 
   const toggleSelectAll = (checked: boolean) => {
-    setSelectedIds(checked ? filteredProducts.map((product) => product.id) : []);
+    setSelectedIds((current) => {
+      if (!checked) {
+        return current.filter((id) => !pagedProducts.some((product) => product.id === id));
+      }
+      return Array.from(new Set([...current, ...pagedProducts.map((product) => product.id)]));
+    });
   };
 
   const toggleSelectOne = (productId: string, checked: boolean) => {
@@ -325,14 +340,6 @@ export default function EstoquePage() {
           <p className="text-muted-foreground">Planilha operacional, contagem real e sincronizacao do catalogo.</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button
-            onClick={() => setViewMode((current) => (current === "cards" ? "spreadsheet" : "cards"))}
-            variant="outline"
-            className="gap-2"
-          >
-            {viewMode === "cards" ? <Sheet className="h-4 w-4" /> : <LayoutGrid className="h-4 w-4" />}
-            {viewMode === "cards" ? "Ver planilha" : "Ver cards"}
-          </Button>
           <Button onClick={() => setIsComparisonOpen(true)} className="gap-2" variant="outline">
             <ArrowLeftRight className="h-4 w-4" />
             Checar estoque do sistema
@@ -399,97 +406,112 @@ export default function EstoquePage() {
         </Card>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-6">
-        {categoryOptions.map(({ category, count }) => (
-          <button
-            key={category}
-            type="button"
-            onClick={() => setCategoryFilter(category)}
-            className={cn(
-              "category-banner text-left transition hover:opacity-90",
-              CATEGORY_COLORS[category],
-              categoryFilter === category && "ring-2 ring-white/80"
-            )}
-          >
-            <p className="text-sm opacity-80">{count} itens</p>
-            <p className="font-bold">{CATEGORY_LABELS[category]}</p>
-          </button>
-        ))}
-      </div>
-
       <Card>
-        <CardContent className="space-y-4 pt-6">
-          <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-            <div className="grid flex-1 gap-3 md:grid-cols-3">
+        <CardHeader className="space-y-4">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <CardTitle>Planilha de estoque</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Conte, selecione e atualize o estoque real direto da tabela.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Checkbox checked={allVisibleSelected} onCheckedChange={toggleSelectAll} />
+              <span className="text-xs uppercase tracking-[0.12em] text-muted-foreground">Selecionar pagina</span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3 lg:grid-cols-4">
+            <div className="space-y-1">
+              <span className="text-xs uppercase tracking-wide text-muted-foreground">Registros por pagina</span>
+              <Select value={String(pageSize)} onValueChange={(value) => setPageSize(Number(value))}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {PAGE_SIZE_OPTIONS.map((size) => (
+                    <SelectItem key={size} value={String(size)}>
+                      {size}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1">
+              <span className="text-xs uppercase tracking-wide text-muted-foreground">Categoria</span>
+              <Select value={categoryFilter} onValueChange={(value) => setCategoryFilter(value as "all" | Category)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Todas as categorias" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas as categorias</SelectItem>
+                  {categoryOptions.map(({ category, count }) => (
+                    <SelectItem key={category} value={category}>
+                      {CATEGORY_LABELS[category]} ({count})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1">
+              <span className="text-xs uppercase tracking-wide text-muted-foreground">Status</span>
+              <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as typeof statusFilter)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Todos" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="active">Ativos</SelectItem>
+                  <SelectItem value="inactive">Inativos</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1">
+              <span className="text-xs uppercase tracking-wide text-muted-foreground">Buscar</span>
               <Input
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
                 placeholder="Buscar produto no estoque..."
               />
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  variant={categoryFilter === "all" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setCategoryFilter("all")}
-                >
-                  Todas as categorias
-                </Button>
-                <Button
-                  variant={statusFilter === "all" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setStatusFilter("all")}
-                >
-                  Todos
-                </Button>
-                <Button
-                  variant={statusFilter === "active" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setStatusFilter("active")}
-                >
-                  Ativos
-                </Button>
-                <Button
-                  variant={statusFilter === "inactive" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setStatusFilter("inactive")}
-                >
-                  Inativos
-                </Button>
-              </div>
-            </div>
-
-            <div className="flex flex-wrap gap-2">
-              <input
-                ref={importInputRef}
-                type="file"
-                accept=".csv"
-                className="hidden"
-                onChange={handleImportFile}
-              />
-              <Button variant="outline" className="gap-2" onClick={() => exportProductsToCsv("filtered")}>
-                <Download className="h-4 w-4" />
-                Exportar filtros
-              </Button>
-              <Button variant="outline" className="gap-2" onClick={() => exportProductsToCsv("selected")}>
-                <Download className="h-4 w-4" />
-                Exportar selecionados
-              </Button>
-              <Button
-                variant="outline"
-                className="gap-2"
-                onClick={() => importInputRef.current?.click()}
-                disabled={isImporting}
-              >
-                <Upload className="h-4 w-4" />
-                {isImporting ? "Importando..." : "Importar CSV"}
-              </Button>
-              <Button className="gap-2" onClick={applySelectedRealCounts}>
-                <ClipboardCheck className="h-4 w-4" />
-                Aplicar estoque real
-              </Button>
             </div>
           </div>
 
+          <div className="flex flex-wrap gap-2">
+            <input
+              ref={importInputRef}
+              type="file"
+              accept=".csv"
+              className="hidden"
+              onChange={handleImportFile}
+            />
+            <Button variant="outline" className="gap-2" onClick={() => exportProductsToCsv("filtered")}>
+              <Download className="h-4 w-4" />
+              Exportar filtros
+            </Button>
+            <Button variant="outline" className="gap-2" onClick={() => exportProductsToCsv("selected")}>
+              <Download className="h-4 w-4" />
+              Exportar selecionados
+            </Button>
+            <Button
+              variant="outline"
+              className="gap-2"
+              onClick={() => importInputRef.current?.click()}
+              disabled={isImporting}
+            >
+              <Upload className="h-4 w-4" />
+              {isImporting ? "Importando..." : "Importar CSV"}
+            </Button>
+            <Button className="gap-2" onClick={applySelectedRealCounts}>
+              <ClipboardCheck className="h-4 w-4" />
+              Aplicar estoque real
+            </Button>
+          </div>
+        </CardHeader>
+
+        <CardContent className="space-y-3">
           {selectedIds.length > 0 ? (
             <div className="flex flex-wrap items-center gap-2 rounded-xl border border-dashed p-3 text-sm">
               <Badge variant="secondary">{selectedIds.length} selecionado(s)</Badge>
@@ -498,177 +520,142 @@ export default function EstoquePage() {
               </span>
             </div>
           ) : null}
-        </CardContent>
-      </Card>
 
-      {viewMode === "cards" ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {filteredProducts.map((product) => (
-            <Card
-              key={product.id}
-              className={cn("overflow-hidden transition-all hover:shadow-lg", !product.active && "opacity-60")}
-            >
-              <div className={cn("h-2", CATEGORY_COLORS[product.category] ?? "bg-muted")} />
-              <CardContent className="space-y-4 p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0 flex-1">
-                    <h3 className="truncate font-semibold text-foreground">{product.name}</h3>
-                    <Badge variant="secondary" className="mt-1 text-xs">
-                      {CATEGORY_LABELS[product.category]}
-                    </Badge>
-                  </div>
-                  <Checkbox
-                    checked={selectedIds.includes(product.id)}
-                    onCheckedChange={(checked) => toggleSelectOne(product.id, !!checked)}
-                  />
-                </div>
+          <div className="text-xs text-muted-foreground">
+            {filteredProducts.length} registro(s) encontrado(s) · pagina {page} de {totalPages}
+          </div>
 
-                <div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Quantidade</span>
-                    <span
-                      className={cn(
-                        "text-2xl font-bold",
-                        product.stock < lowStockThreshold && "text-status-error",
-                        product.stock >= lowStockThreshold && product.stock < lowStockThreshold * 2 && "text-status-warning",
-                        product.stock >= lowStockThreshold * 2 && "text-status-success"
-                      )}
-                    >
-                      {product.stock}
-                    </span>
-                  </div>
-                  <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted">
-                    <div
-                      className={cn(
-                        "h-full transition-all",
-                        product.stock < lowStockThreshold && "bg-status-error",
-                        product.stock >= lowStockThreshold && product.stock < lowStockThreshold * 2 && "bg-status-warning",
-                        product.stock >= lowStockThreshold * 2 && "bg-status-success"
-                      )}
-                      style={{ width: `${Math.min(product.stock, 100)}%` }}
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">
-                    Estoque real contado
-                  </label>
-                  <Input
-                    type="number"
-                    min="0"
-                    value={realCounts[product.id] ?? ""}
-                    onChange={(event) => setCountValue(product.id, event.target.value)}
-                    placeholder={String(product.stock)}
-                  />
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full"
-                    onClick={() => void applyRealCount(product.id)}
-                  >
-                    Atualizar cadastro
-                  </Button>
-                </div>
-
-                {product.stock < lowStockThreshold ? (
-                  <p className="flex items-center gap-1 text-xs text-status-error">
-                    <AlertTriangle className="h-3 w-3" />
-                    Estoque abaixo do limite.
-                  </p>
-                ) : null}
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      ) : (
-        <Card>
-          <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <CardTitle>Planilha de estoque</CardTitle>
-              <p className="text-sm text-muted-foreground">
-                Conte, selecione e atualize o estoque real direto da tabela.
-              </p>
+          {filteredProducts.length === 0 ? (
+            <div className="py-12 text-center">
+              <Package className="mx-auto mb-4 h-12 w-12 text-muted-foreground/50" />
+              <h3 className="text-lg font-medium text-muted-foreground">Nenhum produto encontrado</h3>
+              <p className="text-sm text-muted-foreground/70">Ajuste os filtros para buscar itens no estoque.</p>
             </div>
-            <Checkbox checked={allFilteredSelected} onCheckedChange={toggleSelectAll} />
-          </CardHeader>
-          <CardContent className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow className={cn(compactTables && "h-9")}>
-                  <TableHead className="w-10">Sel.</TableHead>
-                  <TableHead>Produto</TableHead>
-                  <TableHead>Categoria</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-center">Atual</TableHead>
-                  <TableHead className="text-center">Estoque real</TableHead>
-                  <TableHead className="text-center">Diferenca</TableHead>
-                  <TableHead className="text-right">Acao</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredProducts.map((product) => {
-                  const enteredValue = realCounts[product.id];
-                  const realValue = enteredValue !== undefined && enteredValue !== "" ? Number(enteredValue) : product.stock;
-                  const difference = Number.isFinite(realValue) ? realValue - product.stock : 0;
+          ) : (
+            <>
+              <div className="overflow-auto max-h-[560px] rounded-md border border-border">
+                <Table>
+                  <TableHeader className="sticky top-0 z-10 bg-card">
+                    <TableRow className={cn(compactTables && "h-9")}>
+                      <TableHead className="w-10">Sel.</TableHead>
+                      <TableHead>Produto</TableHead>
+                      <TableHead>Categoria</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-center">Atual</TableHead>
+                      <TableHead className="text-center">Estoque real</TableHead>
+                      <TableHead className="text-center">Diferenca</TableHead>
+                      <TableHead className="text-right">Acao</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {pagedProducts.map((product) => {
+                      const enteredValue = realCounts[product.id];
+                      const realValue = enteredValue !== undefined && enteredValue !== "" ? Number(enteredValue) : product.stock;
+                      const difference = Number.isFinite(realValue) ? realValue - product.stock : 0;
 
-                  return (
-                    <TableRow key={product.id} className={cn(!product.active && "opacity-60", compactTables && "h-11")}>
-                      <TableCell>
-                        <Checkbox
-                          checked={selectedIds.includes(product.id)}
-                          onCheckedChange={(checked) => toggleSelectOne(product.id, !!checked)}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <div className="font-medium">{product.name}</div>
-                        {product.subcategory ? (
-                          <div className="text-xs text-muted-foreground">{product.subcategory}</div>
-                        ) : null}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="secondary">{CATEGORY_LABELS[product.category]}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={product.active ? "default" : "secondary"}>
-                          {product.active ? "Ativo" : "Inativo"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-center font-semibold">{product.stock}</TableCell>
-                      <TableCell className="text-center">
-                        <Input
-                          type="number"
-                          min="0"
-                          className="mx-auto w-24 text-center"
-                          value={enteredValue ?? ""}
-                          onChange={(event) => setCountValue(product.id, event.target.value)}
-                          placeholder={String(product.stock)}
-                        />
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <Badge
-                          variant={difference === 0 ? "secondary" : "outline"}
+                      return (
+                        <TableRow key={product.id} className={cn(!product.active && "opacity-60", compactTables && "h-11")}>
+                          <TableCell>
+                            <Checkbox
+                              checked={selectedIds.includes(product.id)}
+                              onCheckedChange={(checked) => toggleSelectOne(product.id, !!checked)}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <div className="font-medium">{product.name}</div>
+                            {product.subcategory ? (
+                              <div className="text-xs text-muted-foreground">{product.subcategory}</div>
+                            ) : null}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="secondary">{CATEGORY_LABELS[product.category]}</Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={product.active ? "default" : "secondary"}>
+                              {product.active ? "Ativo" : "Inativo"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-center font-semibold">{product.stock}</TableCell>
+                          <TableCell className="text-center">
+                            <Input
+                              type="number"
+                              min="0"
+                              className="mx-auto w-24 text-center"
+                              value={enteredValue ?? ""}
+                              onChange={(event) => setCountValue(product.id, event.target.value)}
+                              placeholder={String(product.stock)}
+                            />
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <Badge
+                              variant={difference === 0 ? "secondary" : "outline"}
+                              className={cn(
+                                difference > 0 && "border-status-success/40 text-status-success",
+                                difference < 0 && "border-status-error/40 text-status-error"
+                              )}
+                            >
+                              {difference > 0 ? `+${difference}` : difference}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button variant="outline" size="sm" onClick={() => void applyRealCount(product.id)}>
+                              Atualizar
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <button
+                  type="button"
+                  className="rounded-md border border-border px-3 py-1.5 text-sm disabled:opacity-50"
+                  disabled={page <= 1}
+                  onClick={() => setPage((value) => Math.max(1, value - 1))}
+                >
+                  Anterior
+                </button>
+
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: totalPages })
+                    .slice(0, 7)
+                    .map((_, idx) => {
+                      const pageNumber = idx + 1;
+                      const isCurrent = pageNumber === page;
+                      return (
+                        <button
+                          key={pageNumber}
+                          type="button"
+                          onClick={() => setPage(pageNumber)}
                           className={cn(
-                            difference > 0 && "border-status-success/40 text-status-success",
-                            difference < 0 && "border-status-error/40 text-status-error"
+                            "h-8 min-w-8 rounded-md border px-2 text-sm",
+                            isCurrent
+                              ? "border-primary bg-primary text-primary-foreground"
+                              : "border-border hover:bg-muted"
                           )}
                         >
-                          {difference > 0 ? `+${difference}` : difference}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button variant="outline" size="sm" onClick={() => void applyRealCount(product.id)}>
-                          Atualizar
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      )}
+                          {pageNumber}
+                        </button>
+                      );
+                    })}
+                </div>
+
+                <button
+                  type="button"
+                  className="rounded-md border border-border px-3 py-1.5 text-sm disabled:opacity-50"
+                  disabled={page >= totalPages}
+                  onClick={() => setPage((value) => Math.min(totalPages, value + 1))}
+                >
+                  Proxima
+                </button>
+              </div>
+            </>
+          )}
+        </CardContent>
+      </Card>
 
       <Dialog open={isComparisonOpen} onOpenChange={setIsComparisonOpen}>
         <DialogContent className="max-h-[90vh] max-w-5xl">

@@ -65,7 +65,7 @@ const POPUP_ICONS = [
 ] as const;
 
 const DEFAULT_POPUP_FORM: PopupForm = {
-  type: "FIRST",
+  type: "NEWS",
   level: "INFO",
   title: "",
   message: "",
@@ -352,13 +352,14 @@ export default function SiteContentPage() {
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex min-w-[140px] flex-col items-stretch gap-2">
                   <Badge variant={banner.active ? "default" : "secondary"}>
                     {banner.active ? "Ativo" : "Inativo"}
                   </Badge>
                   <Button
                     variant="outline"
                     size="sm"
+                    className="justify-center"
                     onClick={() => {
                       setEditingBannerId(banner.id);
                       setBannerModalOpen(true);
@@ -370,6 +371,7 @@ export default function SiteContentPage() {
                   <Button
                     variant="outline"
                     size="sm"
+                    className="justify-center"
                     onClick={() =>
                       void toggleProductStatus(banner.id).catch((error: any) =>
                         toast.error(error?.message || "Falha ao atualizar banner.")
@@ -413,6 +415,9 @@ export default function SiteContentPage() {
                       <SelectItem value="NEWS">Novidade</SelectItem>
                     </SelectContent>
                   </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Use <strong>Novidade</strong> ou <strong>Alarme</strong> para avisos do site. Deixe <strong>Primeiro popup</strong> apenas para a abertura principal.
+                  </p>
                 </div>
                 <div className="space-y-2">
                   <Label>Nivel</Label>
@@ -568,7 +573,7 @@ export default function SiteContentPage() {
                       </Button>
                       <Button variant="destructive" size="sm" onClick={() => void deactivateSitePopup(popup.id).then(() => queryClient.invalidateQueries({ queryKey: ["erp", "site-popups"] }))}>
                         <Trash2 className="mr-1 h-4 w-4" />
-                        Desativar
+                        Remover da fila
                       </Button>
                     </div>
                   </div>
