@@ -64,7 +64,7 @@ export default function LoginPage() {
           <div className="mx-auto mb-6 flex h-32 w-32 items-center justify-center rounded-full border border-[hsl(35,80%,55%)]/30 bg-[hsl(35,80%,55%)]/12 shadow-2xl backdrop-blur-sm">
             <img src="/assets/branding/logo-erp.png" alt="ERP Bacaxita" className="h-24 w-24 rounded-full object-cover ring-2 ring-white/40" />
           </div>
-          <h1 className="text-5xl font-bold text-[hsl(35,25%,92%)] mb-2">ERP Bacaxita</h1>
+          <h1 className="text-5xl font-bold text-[hsl(35,25%,92%)] mb-2">Abacaxita Erp</h1>
           <p className="text-lg text-[hsl(35,25%,92%)]/60">Sistema de Gestao ERP</p>
         </div>
       </div>
@@ -75,13 +75,13 @@ export default function LoginPage() {
             <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full border border-primary/20 bg-primary/10">
               <img src="/assets/branding/logo-erp.png" alt="ERP Bacaxita" className="h-14 w-14 rounded-full object-cover ring-1 ring-white/60" />
             </div>
-            <h1 className="text-2xl font-bold text-foreground">ERP Bacaxita</h1>
+            <h1 className="text-2xl font-bold text-foreground">Abacaxita Erp</h1>
           </div>
 
           <Card className="border-0 shadow-lg">
             <CardContent className="pt-6 pb-8 px-8">
               <div className="mb-4 text-center">
-                <h2 className="text-2xl font-bold text-foreground tracking-wide">ERP Bacaxita</h2>
+                <h2 className="text-2xl font-bold text-foreground tracking-wide">Abacaxita Erp</h2>
                 <p className="text-sm text-muted-foreground mt-1">Faca login para continuar</p>
               </div>
 

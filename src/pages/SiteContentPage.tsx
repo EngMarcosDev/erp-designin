@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowDown, ArrowUp, ImagePlus, Save, SquarePen, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, ChevronDown, ImagePlus, Save, SquarePen, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useERP } from "@/contexts/ERPContext";
 import {
@@ -125,6 +125,11 @@ const popupIconUrl = (popup: ErpSitePopup) =>
 export default function SiteContentPage() {
   const queryClient = useQueryClient();
   const { products, toggleProductStatus } = useERP();
+  const [sectionOpen, setSectionOpen] = useState({
+    banners: true,
+    popups: true,
+    categories: true,
+  });
 
   const [bannerModalOpen, setBannerModalOpen] = useState(false);
   const [editingBannerId, setEditingBannerId] = useState<string | null>(null);
@@ -306,18 +311,27 @@ export default function SiteContentPage() {
             <CardTitle className="text-xl">Banners</CardTitle>
             <CardDescription>Botao de Novo Banner movido para esta aba.</CardDescription>
           </div>
-          <Button
-            className="gap-2"
-            onClick={() => {
-              setEditingBannerId(null);
-              setBannerModalOpen(true);
-            }}
-          >
-            <ImagePlus className="h-4 w-4" />
-            Novo Banner
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setSectionOpen((current) => ({ ...current, banners: !current.banners }))}
+            >
+              <ChevronDown className={sectionOpen.banners ? "h-4 w-4 transition-transform" : "h-4 w-4 rotate-[-90deg] transition-transform"} />
+            </Button>
+            <Button
+              className="gap-2"
+              onClick={() => {
+                setEditingBannerId(null);
+                setBannerModalOpen(true);
+              }}
+            >
+              <ImagePlus className="h-4 w-4" />
+              Novo Banner
+            </Button>
+          </div>
         </CardHeader>
-        <CardContent className="space-y-2">
+        {sectionOpen.banners ? <CardContent className="space-y-2">
           {banners.length === 0 ? (
             <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
               Nenhum banner cadastrado.
@@ -368,15 +382,24 @@ export default function SiteContentPage() {
               </div>
             ))
           )}
-        </CardContent>
+        </CardContent> : null}
       </Card>
 
       <Card>
-        <CardHeader>
-          <CardTitle className="text-xl">Popups</CardTitle>
-          <CardDescription>Primeiro popup + alarmes + novidades.</CardDescription>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
+          <div>
+            <CardTitle className="text-xl">Popups</CardTitle>
+            <CardDescription>Primeiro popup + alarmes + novidades.</CardDescription>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setSectionOpen((current) => ({ ...current, popups: !current.popups }))}
+          >
+            <ChevronDown className={sectionOpen.popups ? "h-4 w-4 transition-transform" : "h-4 w-4 rotate-[-90deg] transition-transform"} />
+          </Button>
         </CardHeader>
-        <CardContent className="space-y-4">
+        {sectionOpen.popups ? <CardContent className="space-y-4">
           <div className="grid gap-6 xl:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]">
             <div className="space-y-4 rounded-2xl border p-4">
               <div className="grid gap-4 md:grid-cols-2">
@@ -553,15 +576,24 @@ export default function SiteContentPage() {
               </div>
             </div>
           </div>
-        </CardContent>
+        </CardContent> : null}
       </Card>
 
       <Card>
-        <CardHeader>
-          <CardTitle className="text-xl">Categorias</CardTitle>
-          <CardDescription>Cadastrar e ordenar categorias.</CardDescription>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
+          <div>
+            <CardTitle className="text-xl">Categorias</CardTitle>
+            <CardDescription>Cadastrar e ordenar categorias.</CardDescription>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setSectionOpen((current) => ({ ...current, categories: !current.categories }))}
+          >
+            <ChevronDown className={sectionOpen.categories ? "h-4 w-4 transition-transform" : "h-4 w-4 rotate-[-90deg] transition-transform"} />
+          </Button>
         </CardHeader>
-        <CardContent className="space-y-4">
+        {sectionOpen.categories ? <CardContent className="space-y-4">
           <div className="grid gap-6 xl:grid-cols-[minmax(0,0.95fr)_minmax(320px,1.05fr)]">
             <div className="space-y-4 rounded-2xl border p-4">
               <div className="grid gap-4 md:grid-cols-2">
@@ -626,7 +658,7 @@ export default function SiteContentPage() {
               ))}
             </div>
           </div>
-        </CardContent>
+        </CardContent> : null}
       </Card>
 
       <ProductModal

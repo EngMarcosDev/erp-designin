@@ -508,7 +508,7 @@ export function ProductModal({ open, onClose, productId, initialMode = "product"
           </DialogHeader>
 
           <form onSubmit={handleSubmit} className="flex min-h-0 flex-col">
-            <div className="space-y-4 overflow-y-auto px-6 py-4">
+            <div className="space-y-4 overflow-y-scroll px-6 py-4">
             <div className="space-y-2">
               <Label htmlFor="name">Nome do Produto</Label>
               <Input

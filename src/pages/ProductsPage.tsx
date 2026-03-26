@@ -172,26 +172,6 @@ export default function ProdutosPage() {
           </Button>
         </div>
       </div>
-
-      <Card className="border-amber-200 bg-gradient-to-r from-amber-50 via-white to-orange-50">
-        <CardContent className="flex flex-col gap-3 py-5 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.14em] text-amber-700">Campanhas rapidas</p>
-            <h2 className="text-xl font-bold text-foreground">Destaque os produtos com desconto em poucos cliques</h2>
-            <p className="text-sm text-muted-foreground">
-              Aplique desconto por categoria ou produto e mantenha a vitrine sempre chamando mais atencao.
-            </p>
-          </div>
-          <Button
-            onClick={() => setIsDiscountModalOpen(true)}
-            className="gap-2 self-start bg-amber-600 text-white shadow-lg hover:bg-amber-700"
-          >
-            <BadgePercent className="h-4 w-4" />
-            Abrir desconto agora
-          </Button>
-        </CardContent>
-      </Card>
-
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         {categoryOptions.map(({ cat, count }) => (
           <div
