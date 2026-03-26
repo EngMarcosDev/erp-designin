@@ -120,8 +120,10 @@ export default function UsuariosPage() {
       const haystack = [
         entry.summary,
         entry.actionLabel,
+        entry.entityLabel,
         entry.actor?.name,
         entry.actor?.email,
+        entry.targetLabel,
         entry.targetUser?.name,
         entry.targetUser?.email,
         ...(entry.changedFields ?? []),
@@ -281,7 +283,7 @@ export default function UsuariosPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Usuarios</h1>
-          <p className="text-muted-foreground">Gerencie contas, permissoes e historico administrativo.</p>
+          <p className="text-muted-foreground">Gerencie contas, permissoes e historico administrativo do ERP.</p>
         </div>
         <Button onClick={() => setIsModalOpen(true)} className="gap-2">
           <Plus className="h-4 w-4" />
@@ -592,7 +594,7 @@ export default function UsuariosPage() {
               <div className="relative flex-1 max-w-md">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
-                  placeholder="Filtrar auditoria por usuario, acao ou detalhe..."
+                  placeholder="Filtrar auditoria por acao, entidade ou detalhe..."
                   value={auditSearchTerm}
                   onChange={(event) => setAuditSearchTerm(event.target.value)}
                   className="pl-10"
@@ -628,6 +630,7 @@ export default function UsuariosPage() {
                             <div className="space-y-2">
                               <div className="flex flex-wrap items-center gap-2">
                                 <Badge variant={isSensitive ? "default" : "secondary"}>{entry.actionLabel}</Badge>
+                                {entry.entityLabel ? <Badge variant="outline">{entry.entityLabel}</Badge> : null}
                                 {entry.changedFields?.map((field) => (
                                   <Badge key={field} variant="outline">
                                     {field}
@@ -643,7 +646,7 @@ export default function UsuariosPage() {
                               </p>
                               <p className="text-sm text-muted-foreground">
                                 <strong className="text-foreground">Alvo:</strong>{" "}
-                                {entry.targetUser?.name || "Usuario removido"}{" "}
+                                {entry.targetLabel || entry.targetUser?.name || "Registro removido"}{" "}
                                 {entry.targetUser?.email ? `(${entry.targetUser.email})` : ""}
                               </p>
                               {entry.ipAddress ? <p className="text-xs text-muted-foreground">IP: {entry.ipAddress}</p> : null}

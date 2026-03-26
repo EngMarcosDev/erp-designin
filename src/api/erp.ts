@@ -55,10 +55,11 @@ export interface ErpUser {
 }
 
 export interface ErpUserAuditLog {
-  id: number;
+  id: number | string;
   action: string;
   actionLabel: string;
   entity: string;
+  entityLabel?: string;
   entityId?: number | null;
   actor?: {
     id: number;
@@ -70,6 +71,7 @@ export interface ErpUserAuditLog {
     name?: string;
     email?: string;
   } | null;
+  targetLabel?: string | null;
   changedFields?: string[];
   summary?: string | null;
   details?: Record<string, unknown> | null;

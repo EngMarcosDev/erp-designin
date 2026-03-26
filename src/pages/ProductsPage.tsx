@@ -142,10 +142,12 @@ export default function ProdutosPage() {
 
   const useListMode = filteredProducts.length > 8;
 
-  const hasDiscount = (product: Product) =>
-    product.discountActive === true &&
-    product.originalPrice != null &&
-    Number(product.originalPrice) > Number(product.price);
+const hasDiscount = (product: Product) =>
+  product.discountActive === true &&
+  product.originalPrice != null &&
+  Number(product.originalPrice) > Number(product.price);
+
+  const getProductSnippet = (product: Product) => product.details || product.description || '';
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -306,6 +308,11 @@ export default function ProdutosPage() {
                         </strong>
                       </span>
                     </div>
+                    {getProductSnippet(product) ? (
+                      <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">
+                        <strong className="text-foreground">Detalhes:</strong> {getProductSnippet(product)}
+                      </p>
+                    ) : null}
                   </div>
                   <Badge
                     variant={product.active ? 'default' : 'secondary'}
@@ -417,6 +424,12 @@ export default function ProdutosPage() {
                   </Badge>
                 </div>
                 <div className="space-y-2 text-sm">
+                  {getProductSnippet(product) ? (
+                    <div className="rounded-xl border border-border/70 bg-muted/20 px-3 py-2">
+                      <p className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground">Detalhes</p>
+                      <p className="mt-1 line-clamp-3 text-sm text-foreground/90">{getProductSnippet(product)}</p>
+                    </div>
+                  ) : null}
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Preco:</span>
                     <span className="font-medium text-right">

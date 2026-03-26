@@ -533,13 +533,13 @@ export default function SiteContentPage() {
                       alt={popupForm.title || "Preview"}
                       className="h-14 w-14 rounded-full border object-cover"
                     />
-                    <div className="space-y-2">
+                    <div className="min-w-0 flex-1 space-y-2">
                       <div className="flex flex-wrap gap-2">
                         <Badge variant="outline">{POPUP_TYPE_LABEL[popupForm.type]}</Badge>
                         <Badge variant="secondary">{POPUP_LEVEL_LABEL[popupForm.level]}</Badge>
                         <Badge variant={popupForm.isActive ? "default" : "secondary"}>{popupForm.isActive ? "Ativo" : "Inativo"}</Badge>
                       </div>
-                      <p className="font-semibold">{popupForm.title || "Titulo do popup"}</p>
+                      <p className="break-words font-semibold leading-tight">{popupForm.title || "Titulo do popup"}</p>
                       <p className="whitespace-pre-line break-words text-sm text-muted-foreground">
                         {popupForm.message || "Mensagem de exemplo para acompanhar melhor o que vai para o site."}
                       </p>
@@ -552,12 +552,12 @@ export default function SiteContentPage() {
                 <p className="text-sm font-semibold uppercase tracking-[0.14em] text-muted-foreground">Fila de popups</p>
                 {popups.map((popup, index) => (
                   <div key={popup.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3">
-                    <div className="flex items-center gap-3">
+                    <div className="flex min-w-0 flex-1 items-start gap-3">
                       <img src={popupIconUrl(popup)} alt={popup.title} className="h-10 w-10 rounded-full border object-cover" />
-                      <div>
-                        <p className="font-semibold">{popup.title}</p>
+                      <div className="min-w-0 flex-1">
+                        <p className="break-words font-semibold leading-tight">{popup.title}</p>
                         <p className="text-sm text-muted-foreground whitespace-pre-line break-words">{popup.message}</p>
-                        <div className="flex gap-2 pt-1">
+                        <div className="flex flex-wrap gap-2 pt-1">
                           <Badge variant="outline">{POPUP_TYPE_LABEL[popup.type]}</Badge>
                           <Badge variant="secondary">{POPUP_LEVEL_LABEL[popup.level]}</Badge>
                           <Badge variant={popup.isActive ? "default" : "secondary"}>{popup.isActive ? "Ativo" : "Inativo"}</Badge>
