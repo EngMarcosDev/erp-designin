@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -40,6 +40,7 @@ const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const EDITOR_OFFSET_LIMIT = 65;
 const PRODUCT_IMAGE_MAX_SIDE = 2600;
 const BANNER_IMAGE_MAX_SIDE = 3200;
+const MIN_FREE_CROP_RATIO = 0.28;
 
 const dedupeImageList = (items: string[]) => Array.from(new Set(items.map((item) => item.trim()).filter(Boolean)));
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
@@ -58,13 +59,32 @@ const readFileAsDataUrl = (file: File) =>
     reader.readAsDataURL(file);
   });
 
-const loadImage = (src: string) =>
-  new Promise<HTMLImageElement>((resolve, reject) => {
+const imageCache = new Map<string, Promise<HTMLImageElement>>();
+
+const loadImage = (src: string) => {
+  const cacheKey = src.trim();
+  if (!cacheKey) {
+    return Promise.reject(new Error("Imagem vazia"));
+  }
+
+  const cached = imageCache.get(cacheKey);
+  if (cached) {
+    return cached;
+  }
+
+  const promise = new Promise<HTMLImageElement>((resolve, reject) => {
     const image = new Image();
     image.onload = () => resolve(image);
     image.onerror = () => reject(new Error("Falha ao carregar imagem para ajuste"));
-    image.src = src;
+    image.src = cacheKey;
   });
+  const guardedPromise = promise.catch((error) => {
+    imageCache.delete(cacheKey);
+    throw error;
+  });
+  imageCache.set(cacheKey, guardedPromise);
+  return guardedPromise;
+};
 
 const resolveMimeType = (source: string, preferredType?: string) => {
   const normalizedPreferred = String(preferredType || "").trim().toLowerCase();
@@ -134,20 +154,39 @@ const renderAdjustedImage = async (params: {
   flipY: boolean;
   aspectMode?: EditorAspectMode;
   maxSide?: number;
+  cropWidthRatio?: number;
+  cropHeightRatio?: number;
+  targetCanvas?: HTMLCanvasElement;
 }) => {
   const image = await loadImage(params.source);
   const aspectMode = params.aspectMode ?? "free";
   const maxSide = params.maxSide ?? PRODUCT_IMAGE_MAX_SIDE;
   const mimeType = resolveMimeType(params.source);
   const sourceAspect = image.width > 0 && image.height > 0 ? image.width / image.height : 1;
+  const largestSide = Math.max(image.width, image.height) || 1;
+  const resizeRatio = largestSide > maxSide ? maxSide / largestSide : 1;
+  const baseWidth = Math.max(1, Math.round(image.width * resizeRatio));
+  const baseHeight = Math.max(1, Math.round(image.height * resizeRatio));
+  const cropWidthRatio = clamp(params.cropWidthRatio ?? 1, MIN_FREE_CROP_RATIO, 1);
+  const cropHeightRatio = clamp(params.cropHeightRatio ?? 1, MIN_FREE_CROP_RATIO, 1);
   const targetAspect =
-    aspectMode === "square" ? 1 : aspectMode === "banner" ? 16 / 6 : sourceAspect || 1;
-  const boundedMaxSide = Math.min(maxSide, Math.max(image.width, image.height) || maxSide);
-  const canvasWidth =
+    aspectMode === "square"
+      ? 1
+      : aspectMode === "banner"
+        ? 16 / 6
+        : ((sourceAspect || 1) * cropWidthRatio) / Math.max(cropHeightRatio, 0.01);
+  const boundedMaxSide = Math.min(maxSide, Math.max(baseWidth, baseHeight) || maxSide);
+  let canvasWidth =
     targetAspect >= 1 ? boundedMaxSide : Math.max(1, Math.round(boundedMaxSide * targetAspect));
-  const canvasHeight =
+  let canvasHeight =
     targetAspect >= 1 ? Math.max(1, Math.round(boundedMaxSide / targetAspect)) : boundedMaxSide;
-  const canvas = document.createElement("canvas");
+
+  if (aspectMode === "free") {
+    canvasWidth = Math.max(1, Math.round(baseWidth * cropWidthRatio));
+    canvasHeight = Math.max(1, Math.round(baseHeight * cropHeightRatio));
+  }
+
+  const canvas = params.targetCanvas ?? document.createElement("canvas");
   canvas.width = canvasWidth;
   canvas.height = canvasHeight;
 
@@ -155,6 +194,8 @@ const renderAdjustedImage = async (params: {
   if (!context) {
     throw new Error("Canvas indisponivel");
   }
+  context.imageSmoothingEnabled = true;
+  context.imageSmoothingQuality = "high";
 
   if (mimeType === "image/jpeg") {
     context.fillStyle = "#ffffff";
@@ -163,17 +204,21 @@ const renderAdjustedImage = async (params: {
     context.clearRect(0, 0, canvasWidth, canvasHeight);
   }
 
-  const coverScale = Math.max(canvasWidth / image.width, canvasHeight / image.height);
-  const scaledWidth = image.width * coverScale * params.zoom;
-  const scaledHeight = image.height * coverScale * params.zoom;
-  const translateX = (params.offsetX / 100) * canvasWidth;
-  const translateY = (params.offsetY / 100) * canvasHeight;
+  const coverScale = Math.max(canvasWidth / baseWidth, canvasHeight / baseHeight);
+  const scaledWidth = (aspectMode === "free" ? baseWidth : baseWidth * coverScale) * params.zoom;
+  const scaledHeight = (aspectMode === "free" ? baseHeight : baseHeight * coverScale) * params.zoom;
+  const translateX = (params.offsetX / 100) * (aspectMode === "free" ? baseWidth : canvasWidth);
+  const translateY = (params.offsetY / 100) * (aspectMode === "free" ? baseHeight : canvasHeight);
   context.save();
   context.translate(canvasWidth / 2 + translateX, canvasHeight / 2 + translateY);
   context.rotate((params.rotation * Math.PI) / 180);
   context.scale(params.flipX ? -1 : 1, params.flipY ? -1 : 1);
   context.drawImage(image, -scaledWidth / 2, -scaledHeight / 2, scaledWidth, scaledHeight);
   context.restore();
+
+  if (params.targetCanvas) {
+    return;
+  }
 
   return mimeType === "image/png" ? canvas.toDataURL(mimeType) : canvas.toDataURL(mimeType, 0.94);
 };
@@ -184,8 +229,10 @@ export function ProductModal({ open, onClose, productId, initialMode = "product"
   const productInputRef = useRef<HTMLInputElement>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
   const previewRef = useRef<HTMLDivElement>(null);
+  const previewCanvasRef = useRef<HTMLCanvasElement>(null);
   const dragStartRef = useRef<{ x: number; y: number; offsetX: number; offsetY: number } | null>(null);
   const dragMovedRef = useRef(false);
+  const previewRenderRef = useRef(0);
 
   const [galleryUrlInput, setGalleryUrlInput] = useState("");
   const [bannerUrlInput, setBannerUrlInput] = useState("");
@@ -200,6 +247,9 @@ export function ProductModal({ open, onClose, productId, initialMode = "product"
   const [editorFlipY, setEditorFlipY] = useState(false);
   const [editorAspectMode, setEditorAspectMode] = useState<EditorAspectMode>("free");
   const [editorSourceAspect, setEditorSourceAspect] = useState(1);
+  const [editorSourceSize, setEditorSourceSize] = useState({ width: 1, height: 1 });
+  const [editorCropWidthRatio, setEditorCropWidthRatio] = useState(1);
+  const [editorCropHeightRatio, setEditorCropHeightRatio] = useState(1);
   const [editorGridEnabled, setEditorGridEnabled] = useState(true);
   const [isApplyingAdjust, setIsApplyingAdjust] = useState(false);
 
@@ -271,6 +321,51 @@ export function ProductModal({ open, onClose, productId, initialMode = "product"
   }, [existingProduct, open, isBannerIntent]);
 
   const isBannerMode = isBannerIntent || formData.category === "banners" || existingProduct?.category === "banners";
+  const editorMaxSide = editorTarget === "banner" ? BANNER_IMAGE_MAX_SIDE : PRODUCT_IMAGE_MAX_SIDE;
+  const editorResizeRatio = useMemo(() => {
+    const largestSide = Math.max(editorSourceSize.width, editorSourceSize.height) || 1;
+    return largestSide > editorMaxSide ? editorMaxSide / largestSide : 1;
+  }, [editorSourceSize.height, editorSourceSize.width, editorMaxSide]);
+  const editorBaseWidth = useMemo(
+    () => Math.max(1, Math.round(editorSourceSize.width * editorResizeRatio)),
+    [editorSourceSize.width, editorResizeRatio],
+  );
+  const editorBaseHeight = useMemo(
+    () => Math.max(1, Math.round(editorSourceSize.height * editorResizeRatio)),
+    [editorSourceSize.height, editorResizeRatio],
+  );
+  const editorPreviewAspect = useMemo(() => {
+    if (editorAspectMode === "square") return 1;
+    if (editorAspectMode === "banner") return 16 / 6;
+    return Math.max(0.45, ((editorSourceAspect || 1) * editorCropWidthRatio) / Math.max(editorCropHeightRatio, 0.01));
+  }, [editorAspectMode, editorSourceAspect, editorCropWidthRatio, editorCropHeightRatio]);
+  const editorOffsetLimitX = useMemo(() => {
+    if (editorAspectMode !== "free") return EDITOR_OFFSET_LIMIT;
+    return Math.min(95, Math.max(0, (editorZoom - editorCropWidthRatio) * 50));
+  }, [editorAspectMode, editorZoom, editorCropWidthRatio]);
+  const editorOffsetLimitY = useMemo(() => {
+    if (editorAspectMode !== "free") return EDITOR_OFFSET_LIMIT;
+    return Math.min(95, Math.max(0, (editorZoom - editorCropHeightRatio) * 50));
+  }, [editorAspectMode, editorZoom, editorCropHeightRatio]);
+  const editorEstimatedWidth = useMemo(() => {
+    if (editorAspectMode === "free") {
+      return Math.max(1, Math.round(editorBaseWidth * editorCropWidthRatio));
+    }
+    if (editorAspectMode === "square") {
+      return Math.min(editorBaseWidth, editorBaseHeight);
+    }
+    const maxSide = Math.min(editorMaxSide, Math.max(editorBaseWidth, editorBaseHeight));
+    return maxSide;
+  }, [editorAspectMode, editorBaseWidth, editorBaseHeight, editorCropWidthRatio, editorMaxSide]);
+  const editorEstimatedHeight = useMemo(() => {
+    if (editorAspectMode === "free") {
+      return Math.max(1, Math.round(editorBaseHeight * editorCropHeightRatio));
+    }
+    if (editorAspectMode === "square") {
+      return Math.min(editorBaseWidth, editorBaseHeight);
+    }
+    return Math.max(1, Math.round(editorEstimatedWidth / (16 / 6)));
+  }, [editorAspectMode, editorBaseHeight, editorBaseWidth, editorCropHeightRatio, editorEstimatedWidth]);
 
   const openEditor = (target: number | "banner", source: string) => {
     if (!source) return;
@@ -283,19 +378,72 @@ export function ProductModal({ open, onClose, productId, initialMode = "product"
     setEditorFlipX(false);
     setEditorFlipY(false);
     setEditorAspectMode(target === "banner" ? "banner" : "free");
+    setEditorCropWidthRatio(1);
+    setEditorCropHeightRatio(1);
     setEditorGridEnabled(true);
     setEditorSourceAspect(target === "banner" ? 16 / 6 : 1);
+    setEditorSourceSize({ width: 1, height: 1 });
     dragStartRef.current = null;
     void loadImage(source)
       .then((image) => {
         const nextAspect = image.width > 0 && image.height > 0 ? image.width / image.height : 1;
         setEditorSourceAspect(nextAspect || 1);
+        setEditorSourceSize({
+          width: image.width || 1,
+          height: image.height || 1,
+        });
       })
       .catch(() => {
         setEditorSourceAspect(target === "banner" ? 16 / 6 : 1);
+        setEditorSourceSize({ width: 1, height: 1 });
       });
     setEditorOpen(true);
   };
+
+  useEffect(() => {
+    setEditorOffsetX((previous) => clamp(previous, -editorOffsetLimitX, editorOffsetLimitX));
+    setEditorOffsetY((previous) => clamp(previous, -editorOffsetLimitY, editorOffsetLimitY));
+  }, [editorOffsetLimitX, editorOffsetLimitY]);
+
+  useEffect(() => {
+    if (!editorOpen || !editorSource || !previewCanvasRef.current) return;
+
+    const renderId = ++previewRenderRef.current;
+    void renderAdjustedImage({
+      source: editorSource,
+      zoom: editorZoom,
+      offsetX: editorOffsetX,
+      offsetY: editorOffsetY,
+      rotation: editorRotation,
+      flipX: editorFlipX,
+      flipY: editorFlipY,
+      aspectMode: editorAspectMode,
+      maxSide: Math.min(editorMaxSide, editorTarget === "banner" ? 1100 : 900),
+      cropWidthRatio: editorCropWidthRatio,
+      cropHeightRatio: editorCropHeightRatio,
+      targetCanvas: previewCanvasRef.current,
+    }).catch(() => {
+      if (renderId !== previewRenderRef.current) return;
+      const context = previewCanvasRef.current?.getContext("2d");
+      if (context) {
+        context.clearRect(0, 0, previewCanvasRef.current?.width || 0, previewCanvasRef.current?.height || 0);
+      }
+    });
+  }, [
+    editorOpen,
+    editorSource,
+    editorZoom,
+    editorOffsetX,
+    editorOffsetY,
+    editorRotation,
+    editorFlipX,
+    editorFlipY,
+    editorAspectMode,
+    editorTarget,
+    editorCropWidthRatio,
+    editorCropHeightRatio,
+    editorMaxSide,
+  ]);
 
   const addGalleryImages = (urls: string[]) => {
     setFormData((previous) => {
@@ -398,8 +546,8 @@ export function ProductModal({ open, onClose, productId, initialMode = "product"
     const pointY = clamp((clientY - rect.top) / Math.max(rect.height, 1), 0, 1);
 
     // Shift clicked/touched point toward center for precision alignment.
-    const nextOffsetX = clamp((0.5 - pointX) * 90, -EDITOR_OFFSET_LIMIT, EDITOR_OFFSET_LIMIT);
-    const nextOffsetY = clamp((0.5 - pointY) * 90, -EDITOR_OFFSET_LIMIT, EDITOR_OFFSET_LIMIT);
+    const nextOffsetX = clamp((0.5 - pointX) * Math.max(editorOffsetLimitX * 1.8, 0), -editorOffsetLimitX, editorOffsetLimitX);
+    const nextOffsetY = clamp((0.5 - pointY) * Math.max(editorOffsetLimitY * 1.8, 0), -editorOffsetLimitY, editorOffsetLimitY);
     setEditorOffsetX(nextOffsetX);
     setEditorOffsetY(nextOffsetY);
   };
@@ -428,13 +576,13 @@ export function ProductModal({ open, onClose, productId, initialMode = "product"
     const deltaY = event.clientY - start.y;
     const nextOffsetX = clamp(
       start.offsetX + (deltaX / Math.max(rect.width, 1)) * 100,
-      -EDITOR_OFFSET_LIMIT,
-      EDITOR_OFFSET_LIMIT
+      -editorOffsetLimitX,
+      editorOffsetLimitX
     );
     const nextOffsetY = clamp(
       start.offsetY + (deltaY / Math.max(rect.height, 1)) * 100,
-      -EDITOR_OFFSET_LIMIT,
-      EDITOR_OFFSET_LIMIT
+      -editorOffsetLimitY,
+      editorOffsetLimitY
     );
 
     if (Math.abs(deltaX) > 2 || Math.abs(deltaY) > 2) {
@@ -479,7 +627,9 @@ export function ProductModal({ open, onClose, productId, initialMode = "product"
         flipX: editorFlipX,
         flipY: editorFlipY,
         aspectMode: editorAspectMode,
-        maxSide: editorTarget === "banner" ? BANNER_IMAGE_MAX_SIDE : PRODUCT_IMAGE_MAX_SIDE,
+        maxSide: editorMaxSide,
+        cropWidthRatio: editorCropWidthRatio,
+        cropHeightRatio: editorCropHeightRatio,
       });
 
       if (editorTarget === "banner") {
@@ -970,21 +1120,16 @@ export function ProductModal({ open, onClose, productId, initialMode = "product"
 
       <Dialog open={editorOpen} onOpenChange={setEditorOpen}>
         <DialogContent className="max-h-[94vh] p-0 sm:max-w-5xl">
-          <DialogHeader className="dialog-titlebar -mx-6 -mt-6 px-6 pt-6 pb-4 rounded-t-lg">
+          <DialogHeader className="dialog-titlebar shrink-0 rounded-t-lg px-6 pb-4 pt-6">
             <DialogTitle>Ajustar Imagem</DialogTitle>
           </DialogHeader>
 
           <DialogBody className="space-y-4 px-6 py-4">
             <div
               ref={previewRef}
-              className="relative mx-auto w-full max-w-[540px] touch-none overflow-hidden rounded-[28px] border border-border bg-muted/30 shadow-sm"
+              className="relative mx-auto w-full max-w-[760px] touch-none overflow-hidden rounded-[28px] border border-border bg-muted/30 shadow-sm"
               style={{
-                aspectRatio:
-                  editorAspectMode === "square"
-                    ? "1 / 1"
-                    : editorAspectMode === "banner"
-                      ? "16 / 6"
-                      : `${editorSourceAspect || 1} / 1`,
+                aspectRatio: String(editorPreviewAspect),
               }}
               onPointerDown={handlePreviewPointerDown}
               onPointerMove={handlePreviewPointerMove}
@@ -992,30 +1137,16 @@ export function ProductModal({ open, onClose, productId, initialMode = "product"
               onPointerCancel={handlePreviewPointerUp}
               onWheel={handlePreviewWheel}
             >
-              {editorSource ? (
-                <>
-                  <img
-                    src={editorSource}
-                    alt="Editor"
-                    className="h-full w-full object-cover transition-transform duration-75"
-                    style={{
-                      transform: `translate(${editorOffsetX}%, ${editorOffsetY}%) scale(${editorZoom}) rotate(${editorRotation}deg) scaleX(${
-                        editorFlipX ? -1 : 1
-                      }) scaleY(${editorFlipY ? -1 : 1})`,
-                      transformOrigin: "center",
-                    }}
-                  />
-                  {editorGridEnabled ? (
-                    <div
-                      className="pointer-events-none absolute inset-0 opacity-70"
-                      style={{
-                        backgroundImage:
-                          "linear-gradient(to right, rgba(255,255,255,0.45) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.45) 1px, transparent 1px)",
-                        backgroundSize: "20% 20%",
-                      }}
-                    />
-                  ) : null}
-                </>
+              <canvas ref={previewCanvasRef} className="h-full w-full" />
+              {editorGridEnabled ? (
+                <div
+                  className="pointer-events-none absolute inset-0 opacity-70"
+                  style={{
+                    backgroundImage:
+                      "linear-gradient(to right, rgba(255,255,255,0.45) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.45) 1px, transparent 1px)",
+                    backgroundSize: "20% 20%",
+                  }}
+                />
               ) : null}
               <div className="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full bg-black/45 px-3 py-1.5 text-[10px] uppercase tracking-[0.12em] text-white">
                 <Move className="mr-1 inline-block h-3 w-3" />
@@ -1054,6 +1185,38 @@ export function ProductModal({ open, onClose, productId, initialMode = "product"
                 </div>
               </div>
 
+              {editorAspectMode === "free" ? (
+                <div className="grid gap-3 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label>Largura do corte</Label>
+                    <Slider
+                      value={[editorCropWidthRatio]}
+                      min={MIN_FREE_CROP_RATIO}
+                      max={1}
+                      step={0.01}
+                      onValueChange={(value) => setEditorCropWidthRatio(value[0] || 1)}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      {Math.round(editorCropWidthRatio * 100)}% da largura redimensionada (maximo de {editorBaseWidth}px)
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Altura do corte</Label>
+                    <Slider
+                      value={[editorCropHeightRatio]}
+                      min={MIN_FREE_CROP_RATIO}
+                      max={1}
+                      step={0.01}
+                      onValueChange={(value) => setEditorCropHeightRatio(value[0] || 1)}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      {Math.round(editorCropHeightRatio * 100)}% da altura redimensionada (maximo de {editorBaseHeight}px)
+                    </p>
+                  </div>
+                </div>
+              ) : null}
+
               <div className="space-y-2">
                 <Label>Zoom</Label>
                 <Slider
@@ -1069,8 +1232,8 @@ export function ProductModal({ open, onClose, productId, initialMode = "product"
                 <Label>Centralizacao horizontal</Label>
                 <Slider
                   value={[editorOffsetX]}
-                  min={-EDITOR_OFFSET_LIMIT}
-                  max={EDITOR_OFFSET_LIMIT}
+                  min={-editorOffsetLimitX}
+                  max={editorOffsetLimitX}
                   step={1}
                   onValueChange={(value) => setEditorOffsetX(value[0] || 0)}
                 />
@@ -1080,8 +1243,8 @@ export function ProductModal({ open, onClose, productId, initialMode = "product"
                 <Label>Centralizacao vertical</Label>
                 <Slider
                   value={[editorOffsetY]}
-                  min={-EDITOR_OFFSET_LIMIT}
-                  max={EDITOR_OFFSET_LIMIT}
+                  min={-editorOffsetLimitY}
+                  max={editorOffsetLimitY}
                   step={1}
                   onValueChange={(value) => setEditorOffsetY(value[0] || 0)}
                 />
@@ -1127,11 +1290,12 @@ export function ProductModal({ open, onClose, productId, initialMode = "product"
             </div>
 
             <p className="text-xs text-muted-foreground">
-              Ajuste livre com preview em tempo real. Escolha o formato, role para zoom e arraste para alinhar sem perder o formato original da imagem.
+              Ajuste livre com preview em tempo real. No modo livre voce escolhe o tamanho do corte dentro dos limites do arquivo redimensionado.
+              Resultado estimado: {editorEstimatedWidth} x {editorEstimatedHeight}px.
             </p>
           </DialogBody>
 
-          <DialogFooter className="gap-2 sm:gap-0">
+          <DialogFooter className="shrink-0 gap-2 border-t border-border bg-background px-6 py-4 sm:gap-0">
             <Button type="button" variant="outline" onClick={() => setEditorOpen(false)}>
               Cancelar
             </Button>

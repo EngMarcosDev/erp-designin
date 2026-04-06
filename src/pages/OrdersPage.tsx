@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ShoppingCart, DollarSign, Clock, TrendingUp } from "lucide-react";
+import { ShoppingCart, DollarSign, Clock, TrendingUp, Eye } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -18,8 +19,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useERP } from "@/contexts/ERPContext";
-import { formatPrice, calculateTotal } from "@/lib/priceFormatter";
+import { formatPrice } from "@/lib/priceFormatter";
 import { STATUS_LABELS } from "@/types/erp";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -34,6 +43,7 @@ export default function PedidosPage() {
   const [customerFilter, setCustomerFilter] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
 
   const totalOrders = orders.length;
   const paidOrders = orders.filter((o) => o.status === "pago" || o.status === "enviado").length;
@@ -89,6 +99,10 @@ export default function PedidosPage() {
     const start = (page - 1) * pageSize;
     return filteredOrders.slice(start, start + pageSize);
   }, [filteredOrders, page, pageSize]);
+  const selectedOrder = useMemo(
+    () => orders.find((order) => order.id === selectedOrderId) ?? null,
+    [orders, selectedOrderId],
+  );
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -244,6 +258,7 @@ export default function PedidosPage() {
                       <TableHead>Itens</TableHead>
                       <TableHead>Total</TableHead>
                       <TableHead>Status</TableHead>
+                      <TableHead>Visualizar</TableHead>
                       <TableHead>Atualizar</TableHead>
                       <TableHead>Data</TableHead>
                     </TableRow>
@@ -262,6 +277,18 @@ export default function PedidosPage() {
                         <TableCell>{formatPrice(order.total, { decimals: 2 })}</TableCell>
                         <TableCell>
                           <Badge className={getStatusColor(order.status)}>{STATUS_LABELS[order.status]}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="gap-2"
+                            onClick={() => setSelectedOrderId(order.id)}
+                          >
+                            <Eye className="h-4 w-4" />
+                            Visualizar
+                          </Button>
                         </TableCell>
                         <TableCell>
                           <Select
@@ -334,6 +361,94 @@ export default function PedidosPage() {
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={Boolean(selectedOrder)} onOpenChange={(open) => !open && setSelectedOrderId(null)}>
+        <DialogContent className="max-h-[92vh] p-0 sm:max-w-2xl">
+          <DialogHeader className="dialog-titlebar shrink-0 rounded-t-lg px-6 pb-4 pt-6">
+            <DialogTitle>Pedido {selectedOrder ? `#${selectedOrder.id}` : ""}</DialogTitle>
+          </DialogHeader>
+
+          <DialogBody className="space-y-4 px-6 py-4">
+            {selectedOrder ? (
+              <>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                  <div className="rounded-lg border border-border bg-muted/25 p-3">
+                    <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">Cliente</p>
+                    <p className="mt-1 text-sm font-semibold text-foreground">{selectedOrder.customerName}</p>
+                  </div>
+
+                  <div className="rounded-lg border border-border bg-muted/25 p-3">
+                    <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">Contato</p>
+                    <p className="mt-1 text-sm font-semibold text-foreground">{selectedOrder.email || "-"}</p>
+                  </div>
+
+                  <div className="rounded-lg border border-border bg-muted/25 p-3">
+                    <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">Status</p>
+                    <Badge className={cn("mt-2", getStatusColor(selectedOrder.status))}>
+                      {STATUS_LABELS[selectedOrder.status]}
+                    </Badge>
+                  </div>
+
+                  <div className="rounded-lg border border-border bg-muted/25 p-3">
+                    <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">Total</p>
+                    <p className="mt-1 text-sm font-semibold text-foreground">
+                      {formatPrice(selectedOrder.total, { decimals: 2 })}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="rounded-xl border border-border bg-background">
+                  <div className="border-b border-border px-4 py-3">
+                    <p className="text-sm font-semibold text-foreground">Itens do pedido</p>
+                    <p className="text-xs text-muted-foreground">
+                      Criado em {selectedOrder.createdAt.toLocaleDateString("pt-BR")}
+                    </p>
+                  </div>
+
+                  <div className="space-y-3 px-4 py-4">
+                    {selectedOrder.items.map((item, index) => (
+                      <div
+                        key={`${item.productId}-${index}`}
+                        className="flex flex-col gap-2 rounded-lg border border-border bg-muted/20 p-3 sm:flex-row sm:items-center sm:justify-between"
+                      >
+                        <div>
+                          <p className="text-sm font-semibold text-foreground">{item.productName}</p>
+                          <p className="text-xs text-muted-foreground">Produto #{item.productId}</p>
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-3 text-sm sm:min-w-[280px]">
+                          <div>
+                            <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">Qtd</p>
+                            <p className="font-semibold text-foreground">{item.quantity}</p>
+                          </div>
+                          <div>
+                            <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">Unitario</p>
+                            <p className="font-semibold text-foreground">
+                              {formatPrice(item.unitPrice, { decimals: 2 })}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">Subtotal</p>
+                            <p className="font-semibold text-foreground">
+                              {formatPrice(item.unitPrice * item.quantity, { decimals: 2 })}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </>
+            ) : null}
+          </DialogBody>
+
+          <DialogFooter className="shrink-0 gap-2 border-t border-border bg-background px-6 py-4 sm:gap-0">
+            <Button type="button" variant="outline" onClick={() => setSelectedOrderId(null)}>
+              Fechar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

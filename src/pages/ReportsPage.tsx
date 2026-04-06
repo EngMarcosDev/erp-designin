@@ -49,6 +49,7 @@ export default function RelatoriosPage() {
   const { products, users, orders } = useERP();
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const [selectedReport, setSelectedReport] = useState<ReportType>('pedidos');
+  const [productNumberFilter, setProductNumberFilter] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [brandFilter, setBrandFilter] = useState<string>('all');
   const [materialFilter, setMaterialFilter] = useState<string>('all');
@@ -138,16 +139,23 @@ export default function RelatoriosPage() {
 
   const getFilteredData = (): Array<Record<string, string | number>> => {
     const { from, to } = getDateRange();
+    const productNumberTerm = productNumberFilter.trim().toLowerCase();
 
     switch (selectedReport) {
       case 'pedidos': {
         let filteredOrders = [...orders];
         if (from) filteredOrders = filteredOrders.filter((order) => order.createdAt >= from);
         if (to) filteredOrders = filteredOrders.filter((order) => order.createdAt <= to);
+        if (productNumberTerm) {
+          filteredOrders = filteredOrders.filter((order) =>
+            order.items.some((item) => String(item.productId).toLowerCase().includes(productNumberTerm))
+          );
+        }
 
         return filteredOrders.map((order) => ({
           ID: `#${order.id}`,
           Cliente: order.customerName,
+          Produtos: order.items.map((item) => `#${item.productId} ${item.productName}`).join(' | '),
           Itens: order.items.length,
           Total: `R$ ${order.total.toFixed(2)}`,
           Status: order.status.charAt(0).toUpperCase() + order.status.slice(1),
@@ -160,10 +168,12 @@ export default function RelatoriosPage() {
         if (categoryFilter !== 'all') filteredProducts = filteredProducts.filter((product) => product.category === categoryFilter);
         if (brandFilter !== 'all') filteredProducts = filteredProducts.filter((product) => (product.brand || '').trim() === brandFilter);
         if (materialFilter !== 'all') filteredProducts = filteredProducts.filter((product) => (product.material || '').trim() === materialFilter);
+        if (productNumberTerm) filteredProducts = filteredProducts.filter((product) => String(product.id).toLowerCase().includes(productNumberTerm));
 
         return filteredProducts
           .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'))
           .map((product) => ({
+            Numero: `#${product.id}`,
             Nome: product.name,
             Categoria: CATEGORY_LABELS[product.category],
             Marca: product.brand || '-',
@@ -179,10 +189,12 @@ export default function RelatoriosPage() {
         if (categoryFilter !== 'all') filteredProducts = filteredProducts.filter((product) => product.category === categoryFilter);
         if (brandFilter !== 'all') filteredProducts = filteredProducts.filter((product) => (product.brand || '').trim() === brandFilter);
         if (materialFilter !== 'all') filteredProducts = filteredProducts.filter((product) => (product.material || '').trim() === materialFilter);
+        if (productNumberTerm) filteredProducts = filteredProducts.filter((product) => String(product.id).toLowerCase().includes(productNumberTerm));
 
         return filteredProducts
           .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'))
           .map((product) => ({
+            Numero: `#${product.id}`,
             Produto: product.name,
             Categoria: CATEGORY_LABELS[product.category],
             Marca: product.brand || '-',
@@ -194,7 +206,7 @@ export default function RelatoriosPage() {
       }
 
       case 'mais_vendidos': {
-        const salesMap = new Map<string, { name: string; qty: number; revenue: number }>();
+        const salesMap = new Map<string, { id: string; name: string; qty: number; revenue: number }>();
         let filteredOrders = [...orders];
         if (from) filteredOrders = filteredOrders.filter((order) => order.createdAt >= from);
         if (to) filteredOrders = filteredOrders.filter((order) => order.createdAt <= to);
@@ -209,6 +221,7 @@ export default function RelatoriosPage() {
             }
 
             salesMap.set(item.productId, {
+              id: item.productId,
               name: item.productName,
               qty: item.quantity,
               revenue: item.quantity * item.unitPrice,
@@ -217,9 +230,11 @@ export default function RelatoriosPage() {
         });
 
         return Array.from(salesMap.values())
+          .filter((item) => !productNumberTerm || String(item.id).toLowerCase().includes(productNumberTerm))
           .sort((a, b) => b.qty - a.qty)
           .map((item, index) => ({
             '#': index + 1,
+            Numero: `#${item.id}`,
             Produto: item.name,
             'Qtd Vendida': item.qty,
             'Receita (R$)': item.revenue.toFixed(2),
@@ -288,6 +303,7 @@ export default function RelatoriosPage() {
 
   const openExportModal = (type: ReportType) => {
     setSelectedReport(type);
+    setProductNumberFilter('');
     setCategoryFilter('all');
     setBrandFilter('all');
     setMaterialFilter('all');
@@ -384,7 +400,7 @@ export default function RelatoriosPage() {
         </CardHeader>
         <CardContent>
           <p className="mb-4 text-sm text-muted-foreground">
-            Exporte relatorios em PDF ou Excel com filtros por produto, categoria, marca, material e periodo.
+            Exporte relatorios em PDF ou Excel com filtros por numero do produto, categoria, marca, material e periodo.
           </p>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {(Object.keys(REPORT_LABELS) as ReportType[]).map((type) => {
@@ -481,6 +497,15 @@ export default function RelatoriosPage() {
           </DialogHeader>
 
           <DialogBody className="space-y-4">
+            <div className="space-y-2">
+              <Label>Numero do produto</Label>
+              <Input
+                value={productNumberFilter}
+                onChange={(event) => setProductNumberFilter(event.target.value)}
+                placeholder="Ex: 102"
+              />
+            </div>
+
             {showCategoryFilter && (
               <div className="grid grid-cols-1 gap-3">
                 <div className="space-y-2">
