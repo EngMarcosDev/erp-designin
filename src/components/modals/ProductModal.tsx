@@ -33,8 +33,13 @@ interface ProductModalProps {
   initialMode?: "product" | "banner";
 }
 
+type EditorAspectMode = "free" | "square" | "banner";
+
 const categories = Object.keys(CATEGORY_LABELS) as Category[];
 const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const EDITOR_OFFSET_LIMIT = 65;
+const PRODUCT_IMAGE_MAX_SIDE = 2600;
+const BANNER_IMAGE_MAX_SIDE = 3200;
 
 const dedupeImageList = (items: string[]) => Array.from(new Set(items.map((item) => item.trim()).filter(Boolean)));
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
@@ -61,13 +66,33 @@ const loadImage = (src: string) =>
     image.src = src;
   });
 
-const optimizeDataUrl = async (source: string, params?: { maxSide?: number; quality?: number }) => {
+const resolveMimeType = (source: string, preferredType?: string) => {
+  const normalizedPreferred = String(preferredType || "").trim().toLowerCase();
+  if (normalizedPreferred === "image/png") return "image/png";
+  if (normalizedPreferred === "image/webp") return "image/webp";
+  if (normalizedPreferred === "image/jpeg" || normalizedPreferred === "image/jpg") return "image/jpeg";
+  if (source.startsWith("data:image/png")) return "image/png";
+  if (source.startsWith("data:image/webp")) return "image/webp";
+  if (/\.png(\?|$)/i.test(source)) return "image/png";
+  if (/\.webp(\?|$)/i.test(source)) return "image/webp";
+  return "image/jpeg";
+};
+
+const optimizeDataUrl = async (
+  source: string,
+  params?: { maxSide?: number; quality?: number; preferredType?: string }
+) => {
   const image = await loadImage(source);
-  const maxSide = params?.maxSide ?? 1800;
-  const quality = params?.quality ?? 0.86;
+  const maxSide = params?.maxSide ?? PRODUCT_IMAGE_MAX_SIDE;
+  const quality = params?.quality ?? 0.92;
+  const mimeType = resolveMimeType(source, params?.preferredType);
 
   const largestSide = Math.max(image.width, image.height) || 1;
   const resizeRatio = largestSide > maxSide ? maxSide / largestSide : 1;
+  if (resizeRatio >= 1) {
+    return source;
+  }
+
   const targetWidth = Math.max(1, Math.round(image.width * resizeRatio));
   const targetHeight = Math.max(1, Math.round(image.height * resizeRatio));
 
@@ -80,15 +105,23 @@ const optimizeDataUrl = async (source: string, params?: { maxSide?: number; qual
     throw new Error("Canvas indisponivel");
   }
 
-  context.fillStyle = "#ffffff";
-  context.fillRect(0, 0, targetWidth, targetHeight);
+  if (mimeType === "image/jpeg") {
+    context.fillStyle = "#ffffff";
+    context.fillRect(0, 0, targetWidth, targetHeight);
+  } else {
+    context.clearRect(0, 0, targetWidth, targetHeight);
+  }
+
   context.drawImage(image, 0, 0, targetWidth, targetHeight);
-  return canvas.toDataURL("image/jpeg", quality);
+  return mimeType === "image/png" ? canvas.toDataURL(mimeType) : canvas.toDataURL(mimeType, quality);
 };
 
 const readFileAsOptimizedDataUrl = async (file: File, params?: { maxSide?: number; quality?: number }) => {
   const raw = await readFileAsDataUrl(file);
-  return optimizeDataUrl(raw, params);
+  return optimizeDataUrl(raw, {
+    ...params,
+    preferredType: file.type,
+  });
 };
 
 const renderAdjustedImage = async (params: {
@@ -99,35 +132,50 @@ const renderAdjustedImage = async (params: {
   rotation: number;
   flipX: boolean;
   flipY: boolean;
-  outputSize?: number;
+  aspectMode?: EditorAspectMode;
+  maxSide?: number;
 }) => {
-  const outputSize = params.outputSize ?? 1000;
   const image = await loadImage(params.source);
+  const aspectMode = params.aspectMode ?? "free";
+  const maxSide = params.maxSide ?? PRODUCT_IMAGE_MAX_SIDE;
+  const mimeType = resolveMimeType(params.source);
+  const sourceAspect = image.width > 0 && image.height > 0 ? image.width / image.height : 1;
+  const targetAspect =
+    aspectMode === "square" ? 1 : aspectMode === "banner" ? 16 / 6 : sourceAspect || 1;
+  const boundedMaxSide = Math.min(maxSide, Math.max(image.width, image.height) || maxSide);
+  const canvasWidth =
+    targetAspect >= 1 ? boundedMaxSide : Math.max(1, Math.round(boundedMaxSide * targetAspect));
+  const canvasHeight =
+    targetAspect >= 1 ? Math.max(1, Math.round(boundedMaxSide / targetAspect)) : boundedMaxSide;
   const canvas = document.createElement("canvas");
-  canvas.width = outputSize;
-  canvas.height = outputSize;
+  canvas.width = canvasWidth;
+  canvas.height = canvasHeight;
 
   const context = canvas.getContext("2d");
   if (!context) {
     throw new Error("Canvas indisponivel");
   }
 
-  context.fillStyle = "#ffffff";
-  context.fillRect(0, 0, outputSize, outputSize);
+  if (mimeType === "image/jpeg") {
+    context.fillStyle = "#ffffff";
+    context.fillRect(0, 0, canvasWidth, canvasHeight);
+  } else {
+    context.clearRect(0, 0, canvasWidth, canvasHeight);
+  }
 
-  const coverScale = Math.max(outputSize / image.width, outputSize / image.height);
+  const coverScale = Math.max(canvasWidth / image.width, canvasHeight / image.height);
   const scaledWidth = image.width * coverScale * params.zoom;
   const scaledHeight = image.height * coverScale * params.zoom;
-  const translateX = (params.offsetX / 100) * outputSize;
-  const translateY = (params.offsetY / 100) * outputSize;
+  const translateX = (params.offsetX / 100) * canvasWidth;
+  const translateY = (params.offsetY / 100) * canvasHeight;
   context.save();
-  context.translate(outputSize / 2 + translateX, outputSize / 2 + translateY);
+  context.translate(canvasWidth / 2 + translateX, canvasHeight / 2 + translateY);
   context.rotate((params.rotation * Math.PI) / 180);
   context.scale(params.flipX ? -1 : 1, params.flipY ? -1 : 1);
   context.drawImage(image, -scaledWidth / 2, -scaledHeight / 2, scaledWidth, scaledHeight);
   context.restore();
 
-  return canvas.toDataURL("image/jpeg", 0.9);
+  return mimeType === "image/png" ? canvas.toDataURL(mimeType) : canvas.toDataURL(mimeType, 0.94);
 };
 
 export function ProductModal({ open, onClose, productId, initialMode = "product" }: ProductModalProps) {
@@ -150,6 +198,8 @@ export function ProductModal({ open, onClose, productId, initialMode = "product"
   const [editorRotation, setEditorRotation] = useState(0);
   const [editorFlipX, setEditorFlipX] = useState(false);
   const [editorFlipY, setEditorFlipY] = useState(false);
+  const [editorAspectMode, setEditorAspectMode] = useState<EditorAspectMode>("free");
+  const [editorSourceAspect, setEditorSourceAspect] = useState(1);
   const [editorGridEnabled, setEditorGridEnabled] = useState(true);
   const [isApplyingAdjust, setIsApplyingAdjust] = useState(false);
 
@@ -232,8 +282,18 @@ export function ProductModal({ open, onClose, productId, initialMode = "product"
     setEditorRotation(0);
     setEditorFlipX(false);
     setEditorFlipY(false);
+    setEditorAspectMode(target === "banner" ? "banner" : "free");
     setEditorGridEnabled(true);
+    setEditorSourceAspect(target === "banner" ? 16 / 6 : 1);
     dragStartRef.current = null;
+    void loadImage(source)
+      .then((image) => {
+        const nextAspect = image.width > 0 && image.height > 0 ? image.width / image.height : 1;
+        setEditorSourceAspect(nextAspect || 1);
+      })
+      .catch(() => {
+        setEditorSourceAspect(target === "banner" ? 16 / 6 : 1);
+      });
     setEditorOpen(true);
   };
 
@@ -263,8 +323,8 @@ export function ProductModal({ open, onClose, productId, initialMode = "product"
       const payload = await Promise.all(
         files.map((file) =>
           readFileAsOptimizedDataUrl(file, {
-            maxSide: 1800,
-            quality: 0.86,
+            maxSide: PRODUCT_IMAGE_MAX_SIDE,
+            quality: 0.94,
           })
         )
       );
@@ -286,7 +346,10 @@ export function ProductModal({ open, onClose, productId, initialMode = "product"
     }
 
     try {
-      const dataUrl = await readFileAsOptimizedDataUrl(file, { maxSide: 2200, quality: 0.88 });
+      const dataUrl = await readFileAsOptimizedDataUrl(file, {
+        maxSide: BANNER_IMAGE_MAX_SIDE,
+        quality: 0.94,
+      });
       setFormData((previous) => ({ ...previous, banner: dataUrl }));
       toast.success("Banner carregado.");
     } catch (error: any) {
@@ -335,8 +398,8 @@ export function ProductModal({ open, onClose, productId, initialMode = "product"
     const pointY = clamp((clientY - rect.top) / Math.max(rect.height, 1), 0, 1);
 
     // Shift clicked/touched point toward center for precision alignment.
-    const nextOffsetX = clamp((0.5 - pointX) * 90, -45, 45);
-    const nextOffsetY = clamp((0.5 - pointY) * 90, -45, 45);
+    const nextOffsetX = clamp((0.5 - pointX) * 90, -EDITOR_OFFSET_LIMIT, EDITOR_OFFSET_LIMIT);
+    const nextOffsetY = clamp((0.5 - pointY) * 90, -EDITOR_OFFSET_LIMIT, EDITOR_OFFSET_LIMIT);
     setEditorOffsetX(nextOffsetX);
     setEditorOffsetY(nextOffsetY);
   };
@@ -363,8 +426,16 @@ export function ProductModal({ open, onClose, productId, initialMode = "product"
     const rect = preview.getBoundingClientRect();
     const deltaX = event.clientX - start.x;
     const deltaY = event.clientY - start.y;
-    const nextOffsetX = clamp(start.offsetX + (deltaX / Math.max(rect.width, 1)) * 100, -45, 45);
-    const nextOffsetY = clamp(start.offsetY + (deltaY / Math.max(rect.height, 1)) * 100, -45, 45);
+    const nextOffsetX = clamp(
+      start.offsetX + (deltaX / Math.max(rect.width, 1)) * 100,
+      -EDITOR_OFFSET_LIMIT,
+      EDITOR_OFFSET_LIMIT
+    );
+    const nextOffsetY = clamp(
+      start.offsetY + (deltaY / Math.max(rect.height, 1)) * 100,
+      -EDITOR_OFFSET_LIMIT,
+      EDITOR_OFFSET_LIMIT
+    );
 
     if (Math.abs(deltaX) > 2 || Math.abs(deltaY) > 2) {
       dragMovedRef.current = true;
@@ -407,6 +478,8 @@ export function ProductModal({ open, onClose, productId, initialMode = "product"
         rotation: editorRotation,
         flipX: editorFlipX,
         flipY: editorFlipY,
+        aspectMode: editorAspectMode,
+        maxSide: editorTarget === "banner" ? BANNER_IMAGE_MAX_SIDE : PRODUCT_IMAGE_MAX_SIDE,
       });
 
       if (editorTarget === "banner") {
@@ -728,7 +801,7 @@ export function ProductModal({ open, onClose, productId, initialMode = "product"
                   </Button>
                 </div>
 
-                {formData.banner ? (
+              {formData.banner ? (
                   <div className="mt-2 rounded-lg overflow-hidden border bg-muted/30 h-24 flex items-center justify-center relative">
                     <img src={formData.banner} alt="Preview do banner" className="max-h-full max-w-full object-contain" />
                     <Button
@@ -744,7 +817,7 @@ export function ProductModal({ open, onClose, productId, initialMode = "product"
                 ) : null}
 
                 <p className="text-xs text-muted-foreground">
-                  Recomendado: 1920x720 e ate 8MB. Upload nao sera bloqueado por tamanho/peso.
+                  Recomendado: 1920x720. O sistema preserva o formato original sempre que possivel para evitar perda de qualidade.
                 </p>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -823,8 +896,8 @@ export function ProductModal({ open, onClose, productId, initialMode = "product"
                   <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
                     {formData.gallery.map((image, index) => (
                       <div key={`${image}-${index}`} className="rounded-lg border border-border bg-muted/30 p-2 space-y-2">
-                        <div className="h-24 overflow-hidden rounded-md bg-white/80">
-                          <img src={image} alt={`Imagem ${index + 1}`} className="h-full w-full object-cover" />
+                        <div className="h-24 overflow-hidden rounded-md bg-white/80 p-1">
+                          <img src={image} alt={`Imagem ${index + 1}`} className="h-full w-full object-contain" />
                         </div>
                         <div className="flex flex-wrap gap-1">
                           <Button
@@ -865,7 +938,7 @@ export function ProductModal({ open, onClose, productId, initialMode = "product"
                 )}
 
                 <p className="text-xs text-muted-foreground">
-                  Recomendado: 1200x1200 e ate 5MB por imagem. Upload nao sera bloqueado por tamanho/peso.
+                  Recomendado: acima de 1200px no maior lado. O sistema so reduz a imagem quando ela vier grande demais.
                 </p>
               </div>
             )}
@@ -904,7 +977,15 @@ export function ProductModal({ open, onClose, productId, initialMode = "product"
           <DialogBody className="space-y-4 px-6 py-4">
             <div
               ref={previewRef}
-              className="relative mx-auto aspect-square w-full max-w-[540px] touch-none overflow-hidden rounded-[28px] border border-border bg-muted/30 shadow-sm"
+              className="relative mx-auto w-full max-w-[540px] touch-none overflow-hidden rounded-[28px] border border-border bg-muted/30 shadow-sm"
+              style={{
+                aspectRatio:
+                  editorAspectMode === "square"
+                    ? "1 / 1"
+                    : editorAspectMode === "banner"
+                      ? "16 / 6"
+                      : `${editorSourceAspect || 1} / 1`,
+              }}
               onPointerDown={handlePreviewPointerDown}
               onPointerMove={handlePreviewPointerMove}
               onPointerUp={handlePreviewPointerUp}
@@ -944,6 +1025,36 @@ export function ProductModal({ open, onClose, productId, initialMode = "product"
 
             <div className="space-y-3">
               <div className="space-y-2">
+                <Label>Formato</Label>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={editorAspectMode === "free" ? "default" : "outline"}
+                    onClick={() => setEditorAspectMode("free")}
+                  >
+                    Livre
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={editorAspectMode === "square" ? "default" : "outline"}
+                    onClick={() => setEditorAspectMode("square")}
+                  >
+                    Quadrado
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={editorAspectMode === "banner" ? "default" : "outline"}
+                    onClick={() => setEditorAspectMode("banner")}
+                  >
+                    Banner
+                  </Button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
                 <Label>Zoom</Label>
                 <Slider
                   value={[editorZoom]}
@@ -958,8 +1069,8 @@ export function ProductModal({ open, onClose, productId, initialMode = "product"
                 <Label>Centralizacao horizontal</Label>
                 <Slider
                   value={[editorOffsetX]}
-                  min={-45}
-                  max={45}
+                  min={-EDITOR_OFFSET_LIMIT}
+                  max={EDITOR_OFFSET_LIMIT}
                   step={1}
                   onValueChange={(value) => setEditorOffsetX(value[0] || 0)}
                 />
@@ -969,8 +1080,8 @@ export function ProductModal({ open, onClose, productId, initialMode = "product"
                 <Label>Centralizacao vertical</Label>
                 <Slider
                   value={[editorOffsetY]}
-                  min={-45}
-                  max={45}
+                  min={-EDITOR_OFFSET_LIMIT}
+                  max={EDITOR_OFFSET_LIMIT}
                   step={1}
                   onValueChange={(value) => setEditorOffsetY(value[0] || 0)}
                 />
@@ -1016,7 +1127,7 @@ export function ProductModal({ open, onClose, productId, initialMode = "product"
             </div>
 
             <p className="text-xs text-muted-foreground">
-              O ajuste aplica corte quadrado com preview em tempo real. Role o mouse sobre a imagem para zoom e arraste para ajuste fino.
+              Ajuste livre com preview em tempo real. Escolha o formato, role para zoom e arraste para alinhar sem perder o formato original da imagem.
             </p>
           </DialogBody>
 

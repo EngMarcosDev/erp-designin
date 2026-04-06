@@ -26,18 +26,15 @@ import {
   Dialog,
   DialogBody,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
-  DialogDescription,
 } from '@/components/ui/dialog';
 import { useERP } from '@/contexts/ERPContext';
-import { formatPrice, sanitizePrice } from '@/lib/priceFormatter';
+import { formatPrice } from '@/lib/priceFormatter';
 import { CATEGORY_LABELS, Category } from '@/types/erp';
 import { toast } from 'sonner';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
-import * as XLSX from 'xlsx';
 
 type ReportType = 'pedidos' | 'produtos' | 'estoque' | 'mais_vendidos';
 
@@ -49,7 +46,7 @@ const REPORT_LABELS: Record<ReportType, string> = {
 };
 
 export default function RelatoriosPage() {
-  const { products, users, orders, auditLogs } = useERP();
+  const { products, users, orders } = useERP();
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const [selectedReport, setSelectedReport] = useState<ReportType>('pedidos');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
@@ -58,51 +55,46 @@ export default function RelatoriosPage() {
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
 
-  const getDateRange = () => {
-    const from = dateFrom ? new Date(`${dateFrom}T00:00:00`) : null;
-    const to = dateTo ? new Date(`${dateTo}T23:59:59`) : null;
-    return { from, to };
-  };
-
-  // Stats
   const totalProducts = products.length;
-  const activeProducts = products.filter((p) => p.active).length;
-  const totalStock = products.reduce((sum, p) => sum + p.stock, 0);
-  const lowStockCount = products.filter((p) => p.stock < 10).length;
+  const activeProducts = products.filter((product) => product.active).length;
+  const totalStock = products.reduce((sum, product) => sum + product.stock, 0);
+  const lowStockCount = products.filter((product) => product.stock < 10).length;
   const totalUsers = users.length;
-  const activeUsers = users.filter((u) => u.active).length;
-  const adminCount = users.filter((u) => u.role === 'ADMIN').length;
+  const activeUsers = users.filter((user) => user.active).length;
+  const adminCount = users.filter((user) => user.role === 'ADMIN').length;
   const totalOrders = orders.length;
-  const paidOrders = orders.filter((o) => o.status === 'pago' || o.status === 'enviado').length;
-  const pendingOrders = orders.filter((o) => o.status === 'pendente').length;
+  const paidOrders = orders.filter((order) => order.status === 'pago' || order.status === 'enviado').length;
+  const pendingOrders = orders.filter((order) => order.status === 'pendente').length;
   const totalRevenue = orders
-    .filter((o) => o.status === 'pago' || o.status === 'enviado')
-    .reduce((sum, o) => sum + o.total, 0);
+    .filter((order) => order.status === 'pago' || order.status === 'enviado')
+    .reduce((sum, order) => sum + order.total, 0);
 
-  const productsByCategory = Object.keys(CATEGORY_LABELS).map((cat) => ({
-    category: cat as Category,
-    label: CATEGORY_LABELS[cat as Category],
-    count: products.filter((p) => p.category === cat).length,
-    stock: products.filter((p) => p.category === cat).reduce((sum, p) => sum + p.stock, 0),
+  const productsByCategory = Object.keys(CATEGORY_LABELS).map((categoryKey) => ({
+    category: categoryKey as Category,
+    label: CATEGORY_LABELS[categoryKey as Category],
+    count: products.filter((product) => product.category === categoryKey).length,
+    stock: products
+      .filter((product) => product.category === categoryKey)
+      .reduce((sum, product) => sum + product.stock, 0),
   }));
 
   const availableBrands = useMemo(
     () =>
-      Array.from(new Set(products.map((product) => String(product.brand || "").trim()).filter(Boolean))).sort((a, b) =>
-        a.localeCompare(b, "pt-BR")
-      ),
+      Array.from(
+        new Set(products.map((product) => String(product.brand || '').trim()).filter(Boolean))
+      ).sort((a, b) => a.localeCompare(b, 'pt-BR')),
     [products]
   );
 
   const availableMaterials = useMemo(
     () =>
-      Array.from(new Set(products.map((product) => String(product.material || "").trim()).filter(Boolean))).sort(
-        (a, b) => a.localeCompare(b, "pt-BR")
-      ),
+      Array.from(
+        new Set(products.map((product) => String(product.material || '').trim()).filter(Boolean))
+      ).sort((a, b) => a.localeCompare(b, 'pt-BR')),
     [products]
   );
 
-  const reports = [
+  const reportCards = [
     {
       title: 'Resumo de Produtos',
       icon: Package,
@@ -115,14 +107,14 @@ export default function RelatoriosPage() {
       ],
     },
     {
-      title: 'Resumo de Usuários',
+      title: 'Resumo de Usuarios',
       icon: Users,
       color: 'bg-accent/10 text-accent',
       stats: [
-        { label: 'Total de Usuários', value: totalUsers },
-        { label: 'Usuários Ativos', value: activeUsers },
+        { label: 'Total de Usuarios', value: totalUsers },
+        { label: 'Usuarios Ativos', value: activeUsers },
         { label: 'Administradores', value: adminCount },
-        { label: 'Usuários Comuns', value: totalUsers - adminCount },
+        { label: 'Usuarios Comuns', value: totalUsers - adminCount },
       ],
     },
     {
@@ -138,111 +130,131 @@ export default function RelatoriosPage() {
     },
   ];
 
-  // Filter data based on selections
-  const getFilteredData = () => {
+  const getDateRange = () => {
+    const from = dateFrom ? new Date(`${dateFrom}T00:00:00`) : null;
+    const to = dateTo ? new Date(`${dateTo}T23:59:59`) : null;
+    return { from, to };
+  };
+
+  const getFilteredData = (): Array<Record<string, string | number>> => {
     const { from, to } = getDateRange();
 
     switch (selectedReport) {
       case 'pedidos': {
-        let filtered = [...orders];
-        if (from) filtered = filtered.filter(o => o.createdAt >= from);
-        if (to) filtered = filtered.filter(o => o.createdAt <= to);
-        return filtered.map(o => ({
-          ID: `#${o.id}`,
-          Cliente: o.customerName,
-          Itens: o.items.length,
-          Total: `R$ ${o.total.toFixed(2)}`,
-          Status: o.status.charAt(0).toUpperCase() + o.status.slice(1),
-          Data: o.createdAt.toLocaleDateString('pt-BR'),
+        let filteredOrders = [...orders];
+        if (from) filteredOrders = filteredOrders.filter((order) => order.createdAt >= from);
+        if (to) filteredOrders = filteredOrders.filter((order) => order.createdAt <= to);
+
+        return filteredOrders.map((order) => ({
+          ID: `#${order.id}`,
+          Cliente: order.customerName,
+          Itens: order.items.length,
+          Total: `R$ ${order.total.toFixed(2)}`,
+          Status: order.status.charAt(0).toUpperCase() + order.status.slice(1),
+          Data: order.createdAt.toLocaleDateString('pt-BR'),
         }));
       }
+
       case 'produtos': {
-        let filtered = [...products];
-        if (categoryFilter !== 'all') filtered = filtered.filter(p => p.category === categoryFilter);
-        if (brandFilter !== 'all') filtered = filtered.filter(p => (p.brand || '').trim() === brandFilter);
-        if (materialFilter !== 'all') filtered = filtered.filter(p => (p.material || '').trim() === materialFilter);
-        return filtered.sort((a, b) => a.name.localeCompare(b.name, 'pt-BR')).map(p => ({
-          Nome: p.name,
-          Categoria: CATEGORY_LABELS[p.category],
-          Marca: p.brand || '-',
-          Material: p.material || '-',
-          'Preço (R$)': formatPrice(p.price, { includeCurrency: false, decimals: 2 }),
-          Estoque: p.stock,
-          Status: p.active ? 'Ativo' : 'Inativo',
-        }));
+        let filteredProducts = [...products];
+        if (categoryFilter !== 'all') filteredProducts = filteredProducts.filter((product) => product.category === categoryFilter);
+        if (brandFilter !== 'all') filteredProducts = filteredProducts.filter((product) => (product.brand || '').trim() === brandFilter);
+        if (materialFilter !== 'all') filteredProducts = filteredProducts.filter((product) => (product.material || '').trim() === materialFilter);
+
+        return filteredProducts
+          .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'))
+          .map((product) => ({
+            Nome: product.name,
+            Categoria: CATEGORY_LABELS[product.category],
+            Marca: product.brand || '-',
+            Material: product.material || '-',
+            'Preco (R$)': formatPrice(product.price, { includeCurrency: false, decimals: 2 }),
+            Estoque: product.stock,
+            Status: product.active ? 'Ativo' : 'Inativo',
+          }));
       }
+
       case 'estoque': {
-        let filtered = [...products];
-        if (categoryFilter !== 'all') filtered = filtered.filter(p => p.category === categoryFilter);
-        if (brandFilter !== 'all') filtered = filtered.filter(p => (p.brand || '').trim() === brandFilter);
-        if (materialFilter !== 'all') filtered = filtered.filter(p => (p.material || '').trim() === materialFilter);
-        return filtered.sort((a, b) => a.name.localeCompare(b.name, 'pt-BR')).map(p => ({
-          Produto: p.name,
-          Categoria: CATEGORY_LABELS[p.category],
-          Marca: p.brand || '-',
-          Material: p.material || '-',
-          'Qtd em Estoque': p.stock,
-          Status: p.stock < 10 ? '⚠ Baixo' : 'OK',
-          Ativo: p.active ? 'Sim' : 'Não',
-        }));
+        let filteredProducts = [...products];
+        if (categoryFilter !== 'all') filteredProducts = filteredProducts.filter((product) => product.category === categoryFilter);
+        if (brandFilter !== 'all') filteredProducts = filteredProducts.filter((product) => (product.brand || '').trim() === brandFilter);
+        if (materialFilter !== 'all') filteredProducts = filteredProducts.filter((product) => (product.material || '').trim() === materialFilter);
+
+        return filteredProducts
+          .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'))
+          .map((product) => ({
+            Produto: product.name,
+            Categoria: CATEGORY_LABELS[product.category],
+            Marca: product.brand || '-',
+            Material: product.material || '-',
+            'Qtd em Estoque': product.stock,
+            Status: product.stock < 10 ? 'Baixo' : 'OK',
+            Ativo: product.active ? 'Sim' : 'Nao',
+          }));
       }
+
       case 'mais_vendidos': {
         const salesMap = new Map<string, { name: string; qty: number; revenue: number }>();
         let filteredOrders = [...orders];
-        if (from) filteredOrders = filteredOrders.filter(o => o.createdAt >= from);
-        if (to) filteredOrders = filteredOrders.filter(o => o.createdAt <= to);
+        if (from) filteredOrders = filteredOrders.filter((order) => order.createdAt >= from);
+        if (to) filteredOrders = filteredOrders.filter((order) => order.createdAt <= to);
 
-        filteredOrders.forEach(o => {
-          o.items.forEach(item => {
+        filteredOrders.forEach((order) => {
+          order.items.forEach((item) => {
             const existing = salesMap.get(item.productId);
             if (existing) {
               existing.qty += item.quantity;
               existing.revenue += item.quantity * item.unitPrice;
-            } else {
-              salesMap.set(item.productId, {
-                name: item.productName,
-                qty: item.quantity,
-                revenue: item.quantity * item.unitPrice,
-              });
+              return;
             }
+
+            salesMap.set(item.productId, {
+              name: item.productName,
+              qty: item.quantity,
+              revenue: item.quantity * item.unitPrice,
+            });
           });
         });
 
         return Array.from(salesMap.values())
           .sort((a, b) => b.qty - a.qty)
-          .map((item, i) => ({
-            '#': i + 1,
+          .map((item, index) => ({
+            '#': index + 1,
             Produto: item.name,
             'Qtd Vendida': item.qty,
             'Receita (R$)': item.revenue.toFixed(2),
           }));
       }
+
       default:
         return [];
     }
   };
 
-  const exportPDF = () => {
+  const exportPDF = async () => {
     const data = getFilteredData();
+
     if (data.length === 0) {
       toast.error('Nenhum dado encontrado para exportar');
       return;
     }
 
+    const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
+      import('jspdf'),
+      import('jspdf-autotable'),
+    ]);
     const doc = new jsPDF();
-    const title = `Relatório - ${REPORT_LABELS[selectedReport]}`;
     doc.setFontSize(16);
-    doc.text(title, 14, 20);
+    doc.text(`Relatorio - ${REPORT_LABELS[selectedReport]}`, 14, 20);
     doc.setFontSize(10);
     doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')}`, 14, 28);
 
     if (dateFrom || dateTo) {
-      const period = `Período: ${dateFrom || '...'} a ${dateTo || '...'}`;
-      doc.text(period, 14, 34);
+      doc.text(`Periodo: ${dateFrom || '...'} a ${dateTo || '...'}`, 14, 34);
     }
 
     const headers = Object.keys(data[0]);
-    const rows = data.map(row => headers.map(h => String((row as Record<string, unknown>)[h] ?? '')));
+    const rows = data.map((row) => headers.map((header) => String(row[header] ?? '')));
 
     autoTable(doc, {
       head: [headers],
@@ -257,17 +269,19 @@ export default function RelatoriosPage() {
     setExportModalOpen(false);
   };
 
-  const exportExcel = () => {
+  const exportExcel = async () => {
     const data = getFilteredData();
+
     if (data.length === 0) {
       toast.error('Nenhum dado encontrado para exportar');
       return;
     }
 
-    const ws = XLSX.utils.json_to_sheet(data);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, REPORT_LABELS[selectedReport]);
-    XLSX.writeFile(wb, `relatorio_${selectedReport}_${Date.now()}.xlsx`);
+    const XLSX = await import('xlsx');
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, REPORT_LABELS[selectedReport]);
+    XLSX.writeFile(workbook, `relatorio_${selectedReport}_${Date.now()}.xlsx`);
     toast.success('Excel gerado com sucesso!');
     setExportModalOpen(false);
   };
@@ -281,9 +295,9 @@ export default function RelatoriosPage() {
     if (type === 'pedidos' || type === 'mais_vendidos') {
       const now = new Date();
       const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
-      const format = (value: Date) => value.toISOString().slice(0, 10);
-      setDateFrom(format(firstDay));
-      setDateTo(format(now));
+      const formatDate = (value: Date) => value.toISOString().slice(0, 10);
+      setDateFrom(formatDate(firstDay));
+      setDateTo(formatDate(now));
     } else {
       setDateFrom('');
       setDateTo('');
@@ -294,20 +308,20 @@ export default function RelatoriosPage() {
 
   const showCategoryFilter = selectedReport === 'produtos' || selectedReport === 'estoque';
   const showDateFilter = selectedReport === 'pedidos' || selectedReport === 'mais_vendidos';
+  const filteredDataCount = getFilteredData().length;
 
   return (
     <div className="space-y-6 animate-fade-in">
       <div>
-        <h1 className="text-3xl font-bold text-foreground">Relatórios</h1>
-        <p className="text-muted-foreground">Visão geral do sistema</p>
+        <h1 className="text-3xl font-bold text-foreground">Relatorios</h1>
+        <p className="text-muted-foreground">Visao geral do sistema</p>
       </div>
 
-      {/* Main Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card className="bg-gradient-to-br from-primary/5 to-primary/10">
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
-              <div className="p-3 rounded-lg bg-primary text-primary-foreground">
+              <div className="rounded-lg bg-primary p-3 text-primary-foreground">
                 <Package className="h-6 w-6" />
               </div>
               <div>
@@ -321,11 +335,11 @@ export default function RelatoriosPage() {
         <Card className="bg-gradient-to-br from-accent/5 to-accent/10">
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
-              <div className="p-3 rounded-lg bg-accent text-accent-foreground">
+              <div className="rounded-lg bg-accent p-3 text-accent-foreground">
                 <Users className="h-6 w-6" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Usuários</p>
+                <p className="text-sm text-muted-foreground">Usuarios</p>
                 <p className="text-3xl font-bold">{totalUsers}</p>
               </div>
             </div>
@@ -335,7 +349,7 @@ export default function RelatoriosPage() {
         <Card className="bg-gradient-to-br from-status-success/5 to-status-success/10">
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
-              <div className="p-3 rounded-lg bg-status-success text-white">
+              <div className="rounded-lg bg-status-success p-3 text-white">
                 <ShoppingCart className="h-6 w-6" />
               </div>
               <div>
@@ -349,7 +363,7 @@ export default function RelatoriosPage() {
         <Card className="bg-gradient-to-br from-status-pending/5 to-status-pending/10">
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
-              <div className="p-3 rounded-lg bg-status-pending text-white">
+              <div className="rounded-lg bg-status-pending p-3 text-white">
                 <DollarSign className="h-6 w-6" />
               </div>
               <div>
@@ -361,19 +375,18 @@ export default function RelatoriosPage() {
         </Card>
       </div>
 
-      {/* Export Reports Section */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Download className="h-5 w-5 text-primary" />
-            Gerar Relatórios
+            Gerar Relatorios
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground mb-4">
+          <p className="mb-4 text-sm text-muted-foreground">
             Exporte relatorios em PDF ou Excel com filtros por produto, categoria, marca, material e periodo.
           </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {(Object.keys(REPORT_LABELS) as ReportType[]).map((type) => {
               const icons: Record<ReportType, typeof ShoppingCart> = {
                 pedidos: ShoppingCart,
@@ -382,15 +395,18 @@ export default function RelatoriosPage() {
                 mais_vendidos: TrendingUp,
               };
               const Icon = icons[type];
+
               return (
                 <Button
                   key={type}
                   variant="outline"
-                  className="report-hover-card h-auto py-4 flex flex-col items-center gap-2 hover:bg-primary/5 hover:border-primary/30"
+                  className="report-hover-card flex h-auto flex-col items-center gap-2 py-4 hover:border-primary/30 hover:bg-primary/5"
                   onClick={() => openExportModal(type)}
                 >
                   <Icon className="h-6 w-6 text-primary" />
-                  <span className="text-sm font-medium report-glow-target transition-colors text-foreground">{REPORT_LABELS[type]}</span>
+                  <span className="report-glow-target text-sm font-medium text-foreground transition-colors">
+                    {REPORT_LABELS[type]}
+                  </span>
                   <span className="text-xs text-muted-foreground">PDF / Excel</span>
                 </Button>
               );
@@ -399,13 +415,12 @@ export default function RelatoriosPage() {
         </CardContent>
       </Card>
 
-      {/* Detailed Reports */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {reports.map((report) => (
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        {reportCards.map((report) => (
           <Card key={report.title}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <div className={`p-2 rounded-lg ${report.color}`}>
+                <div className={`rounded-lg p-2 ${report.color}`}>
                   <report.icon className="h-5 w-5" />
                 </div>
                 {report.title}
@@ -416,16 +431,10 @@ export default function RelatoriosPage() {
                 {report.stats.map((stat) => (
                   <div
                     key={stat.label}
-                    className="flex items-center justify-between py-2 border-b last:border-0"
+                    className="flex items-center justify-between border-b py-2 last:border-0"
                   >
-                    <span className="text-sm text-muted-foreground">
-                      {stat.label}
-                    </span>
-                    <span
-                      className={`font-semibold ${
-                        stat.warning ? 'text-status-warning' : ''
-                      }`}
-                    >
+                    <span className="text-sm text-muted-foreground">{stat.label}</span>
+                    <span className={stat.warning ? 'font-semibold text-status-warning' : 'font-semibold'}>
                       {stat.value}
                     </span>
                   </div>
@@ -436,7 +445,6 @@ export default function RelatoriosPage() {
         ))}
       </div>
 
-      {/* Products by Category */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -445,74 +453,30 @@ export default function RelatoriosPage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-            {productsByCategory.map((cat) => (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+            {productsByCategory.map((category) => (
               <div
-                key={cat.category}
-                className="p-4 rounded-lg bg-muted/50 text-center"
+                key={category.category}
+                className="rounded-lg bg-muted/50 p-4 text-center"
               >
-                <p className="text-sm text-muted-foreground">{cat.label}</p>
-                <p className="text-2xl font-bold text-foreground">{cat.count}</p>
-                <p className="text-xs text-muted-foreground">
-                  {cat.stock} unidades
-                </p>
+                <p className="text-sm text-muted-foreground">{category.label}</p>
+                <p className="text-2xl font-bold text-foreground">{category.count}</p>
+                <p className="text-xs text-muted-foreground">{category.stock} unidades</p>
               </div>
             ))}
           </div>
         </CardContent>
       </Card>
 
-      {/* Auditoria */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5 text-accent" />
-            Auditoria do Sistema
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-muted-foreground border-b">
-                  <th className="py-2 pr-4">Quando</th>
-                  <th className="py-2 pr-4">Usuário</th>
-                  <th className="py-2 pr-4">Ação</th>
-                  <th className="py-2">Detalhes</th>
-                </tr>
-              </thead>
-              <tbody>
-                {auditLogs.slice(0, 10).map((log) => (
-                  <tr key={log.id} className="border-b last:border-0">
-                    <td className="py-2 pr-4 text-muted-foreground">
-                      {new Date(log.timestamp).toLocaleString('pt-BR')}
-                    </td>
-                    <td className="py-2 pr-4 font-medium">{log.user}</td>
-                    <td className="py-2 pr-4">
-                      <span className="inline-flex items-center gap-2 px-2 py-1 rounded-full bg-muted/70">
-                        <span className="h-2 w-2 rounded-full bg-primary" />
-                        {log.action}
-                      </span>
-                    </td>
-                    <td className="py-2 text-foreground">{log.details}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Export Modal */}
       <Dialog open={exportModalOpen} onOpenChange={setExportModalOpen}>
         <DialogContent className="sm:max-w-md">
-          <DialogHeader className="dialog-titlebar -mx-6 -mt-6 px-6 pt-6 pb-4 rounded-t-lg">
+          <DialogHeader className="dialog-titlebar -mx-6 -mt-6 rounded-t-lg px-6 pb-4 pt-6">
             <DialogTitle className="flex items-center gap-2">
               <Filter className="h-5 w-5" />
               Exportar: {REPORT_LABELS[selectedReport]}
             </DialogTitle>
             <DialogDescription>
-              Configure os filtros e escolha o formato de exportação.
+              Configure os filtros e escolha o formato de exportacao.
             </DialogDescription>
           </DialogHeader>
 
@@ -527,9 +491,9 @@ export default function RelatoriosPage() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Todas as categorias</SelectItem>
-                      {(Object.keys(CATEGORY_LABELS) as Category[]).map((cat) => (
-                        <SelectItem key={cat} value={cat}>
-                          {CATEGORY_LABELS[cat]}
+                      {(Object.keys(CATEGORY_LABELS) as Category[]).map((category) => (
+                        <SelectItem key={category} value={category}>
+                          {CATEGORY_LABELS[category]}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -575,26 +539,18 @@ export default function RelatoriosPage() {
             {showDateFilter && (
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Data Início</Label>
-                  <Input
-                    type="date"
-                    value={dateFrom}
-                    onChange={(e) => setDateFrom(e.target.value)}
-                  />
+                  <Label>Data Inicio</Label>
+                  <Input type="date" value={dateFrom} onChange={(event) => setDateFrom(event.target.value)} />
                 </div>
                 <div className="space-y-2">
                   <Label>Data Fim</Label>
-                  <Input
-                    type="date"
-                    value={dateTo}
-                    onChange={(e) => setDateTo(e.target.value)}
-                  />
+                  <Input type="date" value={dateTo} onChange={(event) => setDateTo(event.target.value)} />
                 </div>
               </div>
             )}
 
-            <div className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-lg">
-              {getFilteredData().length} registro(s) encontrado(s) com os filtros atuais.
+            <div className="rounded-lg bg-muted/50 p-3 text-sm text-muted-foreground">
+              {filteredDataCount} registro(s) encontrado(s) com os filtros atuais.
             </div>
           </DialogBody>
 
@@ -602,18 +558,11 @@ export default function RelatoriosPage() {
             <Button variant="outline" onClick={() => setExportModalOpen(false)}>
               Cancelar
             </Button>
-            <Button
-              variant="outline"
-              className="gap-2"
-              onClick={exportExcel}
-            >
+            <Button variant="outline" className="gap-2" onClick={exportExcel}>
               <FileSpreadsheet className="h-4 w-4" />
               Excel
             </Button>
-            <Button
-              className="gap-2"
-              onClick={exportPDF}
-            >
+            <Button className="gap-2" onClick={exportPDF}>
               <FileText className="h-4 w-4" />
               PDF
             </Button>
@@ -623,5 +572,3 @@ export default function RelatoriosPage() {
     </div>
   );
 }
-
-

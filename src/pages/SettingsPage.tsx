@@ -10,8 +10,6 @@ import { PERMISSION_LABELS } from "@/types/erp";
 
 export default function SettingsPage() {
   const {
-    popupTint,
-    setPopupTint,
     darkMode,
     setDarkMode,
     lowStockThreshold,
@@ -109,19 +107,6 @@ export default function SettingsPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label className="text-sm text-muted-foreground">Cor dos pop-ups</Label>
-              <div className="flex items-center gap-3">
-                <Input
-                  type="color"
-                  value={popupTint}
-                  onChange={(event) => setPopupTint(event.target.value)}
-                  className="h-10 w-16 cursor-pointer rounded-md p-1"
-                />
-                <Input value={popupTint} onChange={(event) => setPopupTint(event.target.value)} className="flex-1" />
-              </div>
-            </div>
-
             <div className="flex items-start justify-between gap-3 rounded-xl border p-4">
               <div>
                 <Label className="text-base flex items-center gap-2">
@@ -131,6 +116,10 @@ export default function SettingsPage() {
                 <p className="text-sm text-muted-foreground">Ativa o visual escuro para operacao noturna.</p>
               </div>
               <Switch checked={darkMode} onCheckedChange={setDarkMode} />
+            </div>
+
+            <div className="rounded-xl border p-4 text-sm text-muted-foreground">
+              A aparencia dos popups agora segue um padrao fixo do sistema para manter a navegacao mais consistente.
             </div>
           </CardContent>
         </Card>

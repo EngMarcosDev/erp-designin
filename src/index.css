@@ -293,6 +293,43 @@
   .badge-new {
     @apply bg-accent text-accent-foreground text-[10px] md:text-xs font-bold px-2 py-0.5 rounded uppercase tracking-wider;
   }
+
+  .pineapple-loader-shell {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 92px;
+    height: 92px;
+  }
+
+  .pineapple-loader-icon {
+    width: 58px;
+    height: 58px;
+    object-fit: contain;
+    animation: pineapple-loader-bob 1.25s ease-in-out infinite;
+    filter: drop-shadow(0 10px 14px rgba(32, 23, 12, 0.18));
+  }
+
+  .pineapple-loader-orbit {
+    position: absolute;
+    inset: 0;
+    border-radius: 999px;
+    border: 2px solid transparent;
+  }
+
+  .pineapple-loader-orbit--outer {
+    border-top-color: hsl(var(--accent));
+    border-right-color: hsl(var(--warning));
+    animation: pineapple-loader-spin 1.2s linear infinite;
+  }
+
+  .pineapple-loader-orbit--inner {
+    inset: 10px;
+    border-bottom-color: hsl(var(--destructive));
+    border-left-color: hsl(var(--primary));
+    animation: pineapple-loader-spin-reverse 0.95s linear infinite;
+    opacity: 0.85;
+  }
 }
 
 .logo-watermark { position: relative; }
@@ -346,5 +383,35 @@
     background-size: 220px;
     background-position: 50% 8%;
     opacity: 0.05;
+  }
+}
+
+@keyframes pineapple-loader-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pineapple-loader-spin-reverse {
+  from {
+    transform: rotate(360deg);
+  }
+  to {
+    transform: rotate(0deg);
+  }
+}
+
+@keyframes pineapple-loader-bob {
+  0% {
+    transform: translateY(0) scale(0.96);
+  }
+  50% {
+    transform: translateY(-4px) scale(1);
+  }
+  100% {
+    transform: translateY(0) scale(0.96);
   }
 }

@@ -6,7 +6,6 @@ import {
   Order,
   StockComparison,
   Permission,
-  AuditLog,
   Category,
   LocalSpot,
   DEFAULT_ADMIN_PERMISSIONS,
@@ -60,9 +59,6 @@ interface ERPContextType {
 
   // Auth (derived)
   currentUser: User;
-
-  // Audit (placeholder)
-  auditLogs: AuditLog[];
 }
 
 const ERPContext = createContext<ERPContextType | undefined>(undefined);
@@ -453,7 +449,6 @@ export function ERPProvider({ children }: { children: ReactNode }) {
         syncToHeadshop,
         syncFromHeadshop,
         currentUser,
-        auditLogs: [],
       }}
     >
       {children}

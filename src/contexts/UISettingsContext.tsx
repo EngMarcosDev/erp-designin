@@ -1,13 +1,11 @@
 import { createContext, useContext, useEffect, useMemo, useState, ReactNode } from "react";
 
 type UISettingsValue = {
-  popupTint: string;
   darkMode: boolean;
   lowStockThreshold: number;
   preferStockSpreadsheet: boolean;
   compactTables: boolean;
   showAuditHighlights: boolean;
-  setPopupTint: (value: string) => void;
   setDarkMode: (value: boolean) => void;
   setLowStockThreshold: (value: number) => void;
   setPreferStockSpreadsheet: (value: boolean) => void;
@@ -18,7 +16,6 @@ type UISettingsValue = {
 const STORAGE_KEY = "erp_ui_settings";
 
 const DEFAULT_SETTINGS = {
-  popupTint: "#f4ede1",
   darkMode: false,
   lowStockThreshold: 10,
   preferStockSpreadsheet: true,
@@ -37,7 +34,6 @@ const hydrateSettings = () => {
 
     const parsed = JSON.parse(raw) as Partial<typeof DEFAULT_SETTINGS>;
     return {
-      popupTint: typeof parsed.popupTint === "string" ? parsed.popupTint : DEFAULT_SETTINGS.popupTint,
       darkMode: parsed.darkMode === true,
       lowStockThreshold:
         typeof parsed.lowStockThreshold === "number" && Number.isFinite(parsed.lowStockThreshold)
@@ -53,7 +49,6 @@ const hydrateSettings = () => {
 };
 
 export function UISettingsProvider({ children }: { children: ReactNode }) {
-  const [popupTint, setPopupTint] = useState<string>(DEFAULT_SETTINGS.popupTint);
   const [darkMode, setDarkMode] = useState<boolean>(DEFAULT_SETTINGS.darkMode);
   const [lowStockThreshold, setLowStockThreshold] = useState<number>(DEFAULT_SETTINGS.lowStockThreshold);
   const [preferStockSpreadsheet, setPreferStockSpreadsheet] = useState<boolean>(DEFAULT_SETTINGS.preferStockSpreadsheet);
@@ -62,17 +57,12 @@ export function UISettingsProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const hydrated = hydrateSettings();
-    setPopupTint(hydrated.popupTint);
     setDarkMode(hydrated.darkMode);
     setLowStockThreshold(hydrated.lowStockThreshold);
     setPreferStockSpreadsheet(hydrated.preferStockSpreadsheet);
     setCompactTables(hydrated.compactTables);
     setShowAuditHighlights(hydrated.showAuditHighlights);
   }, []);
-
-  useEffect(() => {
-    document.documentElement.style.setProperty("--popup-tint", popupTint);
-  }, [popupTint]);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -86,7 +76,6 @@ export function UISettingsProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (typeof window === "undefined") return;
     const payload = JSON.stringify({
-      popupTint,
       darkMode,
       lowStockThreshold,
       preferStockSpreadsheet,
@@ -94,38 +83,22 @@ export function UISettingsProvider({ children }: { children: ReactNode }) {
       showAuditHighlights,
     });
     window.localStorage.setItem(STORAGE_KEY, payload);
-  }, [
-    popupTint,
-    darkMode,
-    lowStockThreshold,
-    preferStockSpreadsheet,
-    compactTables,
-    showAuditHighlights,
-  ]);
+  }, [darkMode, lowStockThreshold, preferStockSpreadsheet, compactTables, showAuditHighlights]);
 
   const value = useMemo<UISettingsValue>(
     () => ({
-      popupTint,
       darkMode,
       lowStockThreshold,
       preferStockSpreadsheet,
       compactTables,
       showAuditHighlights,
-      setPopupTint,
       setDarkMode,
       setLowStockThreshold: (value) => setLowStockThreshold(Math.max(1, Math.round(value || 1))),
       setPreferStockSpreadsheet,
       setCompactTables,
       setShowAuditHighlights,
     }),
-    [
-      popupTint,
-      darkMode,
-      lowStockThreshold,
-      preferStockSpreadsheet,
-      compactTables,
-      showAuditHighlights,
-    ]
+    [darkMode, lowStockThreshold, preferStockSpreadsheet, compactTables, showAuditHighlights]
   );
 
   return <UISettingsContext.Provider value={value}>{children}</UISettingsContext.Provider>;

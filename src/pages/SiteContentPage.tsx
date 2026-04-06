@@ -126,10 +126,11 @@ export default function SiteContentPage() {
   const queryClient = useQueryClient();
   const { products, toggleProductStatus } = useERP();
   const [sectionOpen, setSectionOpen] = useState({
-    banners: true,
-    popups: true,
-    categories: true,
+    banners: false,
+    popups: false,
+    categories: false,
   });
+  const [popupActionKey, setPopupActionKey] = useState<string | null>(null);
 
   const [bannerModalOpen, setBannerModalOpen] = useState(false);
   const [editingBannerId, setEditingBannerId] = useState<string | null>(null);
@@ -231,6 +232,17 @@ export default function SiteContentPage() {
     queryClient.invalidateQueries({ queryKey: ["erp", "site-popups"] });
   };
 
+  const runPopupAction = async (actionKey: string, action: () => Promise<void>) => {
+    setPopupActionKey(actionKey);
+    try {
+      await action();
+    } catch (error: any) {
+      toast.error(error?.message || "Falha ao atualizar popup.");
+    } finally {
+      setPopupActionKey(null);
+    }
+  };
+
   const moveCategory = async (id: number, direction: "up" | "down") => {
     const list = [...categories];
     const index = list.findIndex((c) => c.id === id);
@@ -242,6 +254,7 @@ export default function SiteContentPage() {
   };
 
   const loadPopupToForm = (popup: ErpSitePopup) => {
+    setSectionOpen((current) => ({ ...current, popups: true }));
     setEditingPopupId(popup.id);
     setPopupForm({
       type: popup.type,
@@ -457,6 +470,9 @@ export default function SiteContentPage() {
                 <div className="space-y-2">
                   <Label>Imagem URL (opcional)</Label>
                   <Input value={popupForm.imageUrl} onChange={(e) => setPopupForm((p) => ({ ...p, imageUrl: e.target.value }))} />
+                  <p className="text-xs text-muted-foreground">
+                    Se quiser manter tudo mais leve e fluido, prefira os icones internos e use imagem externa so quando realmente precisar.
+                  </p>
                 </div>
               </div>
 
@@ -515,7 +531,7 @@ export default function SiteContentPage() {
               <div className="flex gap-2">
                 <Button className="gap-2" onClick={() => savePopup.mutate()} disabled={savePopup.isPending}>
                   <Save className="h-4 w-4" />
-                  {editingPopupId ? "Atualizar popup" : "Criar popup"}
+                  {savePopup.isPending ? "Salvando..." : editingPopupId ? "Atualizar popup" : "Criar popup"}
                 </Button>
                 <Button variant="outline" onClick={() => { setEditingPopupId(null); setPopupForm(DEFAULT_POPUP_FORM); }}>
                   Limpar
@@ -565,15 +581,49 @@ export default function SiteContentPage() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Button variant="outline" size="icon" disabled={index === 0} onClick={() => void movePopup(popup.id, "up")}><ArrowUp className="h-4 w-4" /></Button>
-                      <Button variant="outline" size="icon" disabled={index === popups.length - 1} onClick={() => void movePopup(popup.id, "down")}><ArrowDown className="h-4 w-4" /></Button>
-                      <Button variant="outline" size="sm" onClick={() => loadPopupToForm(popup)}><SquarePen className="mr-1 h-4 w-4" />Editar</Button>
-                      <Button variant="outline" size="sm" onClick={() => void toggleSitePopupStatus(popup.id, !popup.isActive).then(() => queryClient.invalidateQueries({ queryKey: ["erp", "site-popups"] }))}>
-                        {popup.isActive ? "Desativar" : "Ativar"}
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        disabled={index === 0 || popupActionKey !== null}
+                        onClick={() => void runPopupAction(`move-up-${popup.id}`, () => movePopup(popup.id, "up"))}
+                      >
+                        <ArrowUp className="h-4 w-4" />
                       </Button>
-                      <Button variant="destructive" size="sm" onClick={() => void deactivateSitePopup(popup.id).then(() => queryClient.invalidateQueries({ queryKey: ["erp", "site-popups"] }))}>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        disabled={index === popups.length - 1 || popupActionKey !== null}
+                        onClick={() => void runPopupAction(`move-down-${popup.id}`, () => movePopup(popup.id, "down"))}
+                      >
+                        <ArrowDown className="h-4 w-4" />
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => loadPopupToForm(popup)}><SquarePen className="mr-1 h-4 w-4" />Editar</Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={popupActionKey !== null}
+                        onClick={() =>
+                          void runPopupAction(`toggle-${popup.id}`, async () => {
+                            await toggleSitePopupStatus(popup.id, !popup.isActive);
+                            await queryClient.invalidateQueries({ queryKey: ["erp", "site-popups"] });
+                          })
+                        }
+                      >
+                        {popupActionKey === `toggle-${popup.id}` ? "Salvando..." : popup.isActive ? "Desativar" : "Ativar"}
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        disabled={popupActionKey !== null}
+                        onClick={() =>
+                          void runPopupAction(`remove-${popup.id}`, async () => {
+                            await deactivateSitePopup(popup.id);
+                            await queryClient.invalidateQueries({ queryKey: ["erp", "site-popups"] });
+                          })
+                        }
+                      >
                         <Trash2 className="mr-1 h-4 w-4" />
-                        Remover da fila
+                        {popupActionKey === `remove-${popup.id}` ? "Removendo..." : "Remover da fila"}
                       </Button>
                     </div>
                   </div>

@@ -1,18 +1,21 @@
+import { Suspense, lazy } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "sonner";
-import OrdersPage from "@/pages/OrdersPage";
-import ProductsPage from "@/pages/ProductsPage";
-import UsersPage from "@/pages/UsersPage";
-import StockPage from "@/pages/StockPage";
-import ReportsPage from "@/pages/ReportsPage";
-import LoginPage from "@/pages/LoginPage";
 import { ERPProvider } from "@/contexts/ERPContext";
 import { MainLayout } from "@/components/layout/MainLayout";
-import SettingsPage from "@/pages/SettingsPage";
 import { UISettingsProvider } from "@/contexts/UISettingsContext";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import PineappleLoader from "@/components/PineappleLoader";
 import type { Permission } from "@/types/erp";
-import SiteContentPage from "@/pages/SiteContentPage";
+
+const OrdersPage = lazy(() => import("@/pages/OrdersPage"));
+const ProductsPage = lazy(() => import("@/pages/ProductsPage"));
+const UsersPage = lazy(() => import("@/pages/UsersPage"));
+const StockPage = lazy(() => import("@/pages/StockPage"));
+const ReportsPage = lazy(() => import("@/pages/ReportsPage"));
+const LoginPage = lazy(() => import("@/pages/LoginPage"));
+const SettingsPage = lazy(() => import("@/pages/SettingsPage"));
+const SiteContentPage = lazy(() => import("@/pages/SiteContentPage"));
 
 const routeOrder: Array<{ path: string; permission: Permission }> = [
   { path: "/pedidos", permission: "gerenciar_pedidos" },
@@ -74,97 +77,99 @@ const App = () => (
       <ERPProvider>
         <Toaster richColors position="top-right" />
         <BrowserRouter>
-          <Routes>
-            <Route
-              path="/login"
-              element={
-                <PublicRoute>
-                  <LoginPage />
-                </PublicRoute>
-              }
-            />
+          <Suspense fallback={<PineappleLoader fullScreen label="Carregando painel" />}>
+            <Routes>
+              <Route
+                path="/login"
+                element={
+                  <PublicRoute>
+                    <LoginPage />
+                  </PublicRoute>
+                }
+              />
 
-            <Route path="/" element={<HomeRedirect />} />
+              <Route path="/" element={<HomeRedirect />} />
 
-            <Route
-              path="/pedidos"
-              element={
-                <PrivateRoute requiredPermission="gerenciar_pedidos">
-                  <MainLayout>
-                    <OrdersPage />
-                  </MainLayout>
-                </PrivateRoute>
-              }
-            />
+              <Route
+                path="/pedidos"
+                element={
+                  <PrivateRoute requiredPermission="gerenciar_pedidos">
+                    <MainLayout>
+                      <OrdersPage />
+                    </MainLayout>
+                  </PrivateRoute>
+                }
+              />
 
-            <Route
-              path="/produtos"
-              element={
-                <PrivateRoute requiredPermission="gerenciar_produtos">
-                  <MainLayout>
-                    <ProductsPage />
-                  </MainLayout>
-                </PrivateRoute>
-              }
-            />
+              <Route
+                path="/produtos"
+                element={
+                  <PrivateRoute requiredPermission="gerenciar_produtos">
+                    <MainLayout>
+                      <ProductsPage />
+                    </MainLayout>
+                  </PrivateRoute>
+                }
+              />
 
-            <Route
-              path="/usuarios"
-              element={
-                <PrivateRoute requiredPermission="gerenciar_usuarios">
-                  <MainLayout>
-                    <UsersPage />
-                  </MainLayout>
-                </PrivateRoute>
-              }
-            />
+              <Route
+                path="/usuarios"
+                element={
+                  <PrivateRoute requiredPermission="gerenciar_usuarios">
+                    <MainLayout>
+                      <UsersPage />
+                    </MainLayout>
+                  </PrivateRoute>
+                }
+              />
 
-            <Route
-              path="/estoque"
-              element={
-                <PrivateRoute requiredPermission="gerenciar_estoque">
-                  <MainLayout>
-                    <StockPage />
-                  </MainLayout>
-                </PrivateRoute>
-              }
-            />
+              <Route
+                path="/estoque"
+                element={
+                  <PrivateRoute requiredPermission="gerenciar_estoque">
+                    <MainLayout>
+                      <StockPage />
+                    </MainLayout>
+                  </PrivateRoute>
+                }
+              />
 
-            <Route
-              path="/relatorios"
-              element={
-                <PrivateRoute requiredPermission="ver_relatorios">
-                  <MainLayout>
-                    <ReportsPage />
-                  </MainLayout>
-                </PrivateRoute>
-              }
-            />
+              <Route
+                path="/relatorios"
+                element={
+                  <PrivateRoute requiredPermission="ver_relatorios">
+                    <MainLayout>
+                      <ReportsPage />
+                    </MainLayout>
+                  </PrivateRoute>
+                }
+              />
 
-            <Route
-              path="/conteudo"
-              element={
-                <PrivateRoute requiredPermission="gerenciar_produtos">
-                  <MainLayout>
-                    <SiteContentPage />
-                  </MainLayout>
-                </PrivateRoute>
-              }
-            />
+              <Route
+                path="/conteudo"
+                element={
+                  <PrivateRoute requiredPermission="gerenciar_produtos">
+                    <MainLayout>
+                      <SiteContentPage />
+                    </MainLayout>
+                  </PrivateRoute>
+                }
+              />
 
-            <Route
-              path="/configuracoes"
-              element={
-                <PrivateRoute requiredPermission="gerenciar_usuarios">
-                  <MainLayout>
-                    <SettingsPage />
-                  </MainLayout>
-                </PrivateRoute>
-              }
-            />
+              <Route
+                path="/configuracoes"
+                element={
+                  <PrivateRoute requiredPermission="gerenciar_usuarios">
+                    <MainLayout>
+                      <SettingsPage />
+                    </MainLayout>
+                  </PrivateRoute>
+                }
+              />
 
-            <Route path="*" element={<HomeRedirect />} />
-          </Routes>
+              <Route path="*" element={<HomeRedirect />} />
+            </Routes>
+          </Suspense>
         </BrowserRouter>
       </ERPProvider>
     </UISettingsProvider>

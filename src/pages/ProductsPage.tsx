@@ -30,6 +30,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 
+const PAGE_SIZE_OPTIONS = [10, 25, 50] as const;
+
 export default function ProdutosPage() {
   const navigate = useNavigate();
   const { products, toggleProductStatus, deleteProduct } = useERP();
@@ -37,6 +39,8 @@ export default function ProdutosPage() {
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [viewFilter, setViewFilter] = useState<'all' | 'products' | 'banners'>('products');
   const [statusFilter, setStatusFilter] = useState<'active' | 'inactive' | 'all'>('active');
+  const [pageSize, setPageSize] = useState<number>(10);
+  const [page, setPage] = useState<number>(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [createMode, setCreateMode] = useState<'product' | 'banner'>('product');
   const [isDiscountModalOpen, setIsDiscountModalOpen] = useState(false);
@@ -49,19 +53,23 @@ export default function ProdutosPage() {
     step: 1 | 2;
   }>({ open: false, productId: null, productName: '', step: 1 });
 
-  const filteredProducts = products
-    .filter((product) => {
-      const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesCategory = categoryFilter === 'all' || product.category === categoryFilter;
-      const matchesStatus =
-        statusFilter === 'all' || (statusFilter === 'active' ? product.active : !product.active);
-      const isBannerEntry = product.category === 'banners';
-      const matchesView =
-        viewFilter === 'all' ||
-        (viewFilter === 'banners' ? isBannerEntry : !isBannerEntry);
-      return matchesSearch && matchesCategory && matchesStatus && matchesView;
-    })
-    .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+  const filteredProducts = useMemo(
+    () =>
+      products
+        .filter((product) => {
+          const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase());
+          const matchesCategory = categoryFilter === 'all' || product.category === categoryFilter;
+          const matchesStatus =
+            statusFilter === 'all' || (statusFilter === 'active' ? product.active : !product.active);
+          const isBannerEntry = product.category === 'banners';
+          const matchesView =
+            viewFilter === 'all' ||
+            (viewFilter === 'banners' ? isBannerEntry : !isBannerEntry);
+          return matchesSearch && matchesCategory && matchesStatus && matchesView;
+        })
+        .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR')),
+    [products, searchTerm, categoryFilter, statusFilter, viewFilter]
+  );
 
   const handleEdit = (id: string) => {
     setCreateMode('product');
@@ -134,6 +142,10 @@ export default function ProdutosPage() {
     }
   }, [categoryFilter, visibleCategories]);
 
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm, categoryFilter, viewFilter, statusFilter, pageSize]);
+
   const localLabels: Record<LocalSpot, string> = {
     novidades: 'Novidades',
     mais_vendidos: 'Mais vendidos',
@@ -141,6 +153,18 @@ export default function ProdutosPage() {
   };
 
   const useListMode = filteredProducts.length > 8;
+  const totalPages = Math.max(1, Math.ceil(filteredProducts.length / pageSize));
+
+  useEffect(() => {
+    if (page > totalPages) {
+      setPage(totalPages);
+    }
+  }, [page, totalPages]);
+
+  const pagedProducts = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return filteredProducts.slice(start, start + pageSize);
+  }, [filteredProducts, page, pageSize]);
 
 const hasDiscount = (product: Product) =>
   product.discountActive === true &&
@@ -231,6 +255,22 @@ const hasDiscount = (product: Product) =>
             <SelectItem value="banners">Somente banners</SelectItem>
           </SelectContent>
         </Select>
+        <Select value={String(pageSize)} onValueChange={(value) => setPageSize(Number(value))}>
+          <SelectTrigger className="w-full sm:w-44">
+            <SelectValue placeholder="Por pagina" />
+          </SelectTrigger>
+          <SelectContent>
+            {PAGE_SIZE_OPTIONS.map((size) => (
+              <SelectItem key={size} value={String(size)}>
+                {size} por pagina
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="text-xs text-muted-foreground">
+        {filteredProducts.length} registro(s) encontrado(s) · pagina {page} de {totalPages}
       </div>
 
       {filteredProducts.length === 0 ? (
@@ -257,7 +297,7 @@ const hasDiscount = (product: Product) =>
         <Card>
           <CardContent className="p-0">
             <div className="divide-y">
-              {filteredProducts.map((product) => (
+              {pagedProducts.map((product) => (
                 <div key={product.id} className="flex items-center gap-3 px-4 py-3 hover:bg-muted/50">
                   <div className={cn('w-2 h-10 rounded-full', CATEGORY_COLORS[product.category] ?? 'bg-muted')} />
                   <div className="flex-1 min-w-0">
@@ -348,7 +388,7 @@ const hasDiscount = (product: Product) =>
         </Card>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {filteredProducts.map((product) => (
+          {pagedProducts.map((product) => (
             <Card
               key={product.id}
               className={cn('overflow-hidden hover:shadow-lg transition-all', !product.active && 'opacity-60')}
@@ -479,6 +519,52 @@ const hasDiscount = (product: Product) =>
           ))}
         </div>
       )}
+
+      {filteredProducts.length > 0 ? (
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <button
+            type="button"
+            className="text-sm px-3 py-1.5 rounded-md border border-border disabled:opacity-50"
+            disabled={page <= 1}
+            onClick={() => setPage((value) => Math.max(1, value - 1))}
+          >
+            Anterior
+          </button>
+
+          <div className="flex items-center gap-1">
+            {Array.from({ length: totalPages })
+              .slice(0, 7)
+              .map((_, idx) => {
+                const pageNumber = idx + 1;
+                const isCurrent = pageNumber === page;
+                return (
+                  <button
+                    key={pageNumber}
+                    type="button"
+                    onClick={() => setPage(pageNumber)}
+                    className={cn(
+                      'h-8 min-w-8 px-2 rounded-md text-sm border',
+                      isCurrent
+                        ? 'bg-primary text-primary-foreground border-primary'
+                        : 'border-border hover:bg-muted'
+                    )}
+                  >
+                    {pageNumber}
+                  </button>
+                );
+              })}
+          </div>
+
+          <button
+            type="button"
+            className="text-sm px-3 py-1.5 rounded-md border border-border disabled:opacity-50"
+            disabled={page >= totalPages}
+            onClick={() => setPage((value) => Math.min(totalPages, value + 1))}
+          >
+            Proxima
+          </button>
+        </div>
+      ) : null}
 
       <ProductModal
         open={isModalOpen}
