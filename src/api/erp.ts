@@ -305,6 +305,13 @@ export const toggleCategoryStatus = async (id: number, isActive: boolean): Promi
   });
 };
 
+export const deleteCategory = async (id: number) => {
+  await request(`/categories/${id}`, {
+    method: "DELETE",
+  });
+  return true;
+};
+
 export const reorderCategories = async (orderedIds: number[]): Promise<ErpCategory[]> => {
   return request("/categories/reorder", {
     method: "PUT",

@@ -5,7 +5,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { formatPrice, sanitizePrice } from "@/lib/priceFormatter";
 import {
   createProduct,
-  deleteProduct,
   fetchOrders,
   fetchProducts,
   fetchStockReport,
@@ -38,11 +37,6 @@ const ErpDashboard = () => {
 
   const updateMutation = useMutation({
     mutationFn: ({ id, payload }: { id: number; payload: any }) => updateProduct(id, payload),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["erp", "products"] }),
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: deleteProduct,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["erp", "products"] }),
   });
 
@@ -181,12 +175,6 @@ const ErpDashboard = () => {
                     className="px-2 py-1 rounded-md bg-[#a07b3b] text-white text-xs"
                   >
                     {product.active ? "Desativar" : "Ativar"}
-                  </button>
-                  <button
-                    onClick={() => deleteMutation.mutate(product.id)}
-                    className="px-2 py-1 rounded-md bg-red-600 text-white text-xs"
-                  >
-                    Remover
                   </button>
                 </div>
               </div>

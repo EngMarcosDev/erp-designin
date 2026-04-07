@@ -1,6 +1,6 @@
 // ERP Abacaxita shared types
 
-export type Category = "bacakits" | "sedas" | "piteira" | "cuia" | "acessorios" | "fumigenos" | "banners";
+export type Category = string;
 
 export type UserRole = "ADMIN" | "USUARIO" | "CLIENTE";
 
@@ -45,7 +45,7 @@ export interface Product {
   showBannerPrice?: boolean;
   active: boolean;
   localSpot?: LocalSpot;
-  localCategory?: Category | null;
+  localCategory?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -100,7 +100,7 @@ export interface StockComparison {
   difference: number;
 }
 
-export const CATEGORY_LABELS: Record<Category, string> = {
+export const CATEGORY_LABELS: Record<string, string> = {
   sedas: "Sedas",
   piteira: "Piteiras",
   fumigenos: "Fumigenos",
@@ -110,7 +110,7 @@ export const CATEGORY_LABELS: Record<Category, string> = {
   banners: "Banners",
 };
 
-export const CATEGORY_COLORS: Record<Category, string> = {
+export const CATEGORY_COLORS: Record<string, string> = {
   bacakits: "category-bacakits",
   sedas: "category-sedas",
   piteira: "category-piteira",

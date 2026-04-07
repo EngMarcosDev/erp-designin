@@ -152,6 +152,7 @@ export function ERPProvider({ children }: { children: ReactNode }) {
       .normalize("NFD")
       .replace(/[\u0300-\u036f]/g, "");
 
+    if (!normalized) return "acessorios";
     if (normalized === "sedas") return "sedas";
     if (normalized === "piteira" || normalized === "piteiras") return "piteira";
     if (normalized === "fumigeno" || normalized === "fumigenos") return "fumigenos";
@@ -166,7 +167,7 @@ export function ERPProvider({ children }: { children: ReactNode }) {
     }
     if (normalized === "acessorio" || normalized === "acessorios") return "acessorios";
     if (normalized === "banner" || normalized === "banners") return "banners";
-    return "acessorios";
+    return normalized;
   };
 
   // -------- Mapping helpers --------

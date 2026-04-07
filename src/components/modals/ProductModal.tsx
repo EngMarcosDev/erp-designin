@@ -20,7 +20,8 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { useERP } from "@/contexts/ERPContext";
-import { Category, CATEGORY_COLORS, CATEGORY_LABELS, LocalSpot } from "@/types/erp";
+import { useErpCategories, resolveCategoryColor, resolveCategoryLabel } from "@/hooks/useErpCategories";
+import { Category, CATEGORY_LABELS, LocalSpot } from "@/types/erp";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { ImageIcon, Upload, Crop, Sparkles, Move, RotateCcw, RotateCw, FlipHorizontal, FlipVertical, Grid3x3 } from "lucide-react";
@@ -35,11 +36,10 @@ interface ProductModalProps {
 
 type EditorAspectMode = "free" | "square" | "banner";
 
-const categories = Object.keys(CATEGORY_LABELS) as Category[];
 const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const EDITOR_OFFSET_LIMIT = 65;
 const PRODUCT_IMAGE_MAX_SIDE = 2600;
-const BANNER_IMAGE_MAX_SIDE = 3200;
+const BANNER_IMAGE_MAX_SIDE = 4200;
 const MIN_FREE_CROP_RATIO = 0.28;
 
 const dedupeImageList = (items: string[]) => Array.from(new Set(items.map((item) => item.trim()).filter(Boolean)));
@@ -225,6 +225,7 @@ const renderAdjustedImage = async (params: {
 
 export function ProductModal({ open, onClose, productId, initialMode = "product" }: ProductModalProps) {
   const { products, addProduct, updateProduct } = useERP();
+  const { categories: availableCategories, categoryMap } = useErpCategories(true);
   const [isLoading, setIsLoading] = useState(false);
   const productInputRef = useRef<HTMLInputElement>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
@@ -765,9 +766,7 @@ export function ProductModal({ open, onClose, productId, initialMode = "product"
                     onChange={(event) => setFormData((previous) => ({ ...previous, details: event.target.value }))}
                     placeholder="Ex: Esse kit e composto por seda slim, piteira de vidro e dichavador."
                   />
-                  <p className="text-xs text-muted-foreground">
-                    Esse bloco aparece organizado na pagina do produto no HeadShop.
-                  </p>
+                  <p className="text-xs text-muted-foreground">Exibido na pagina do produto.</p>
                 </div>
               </>
             )}
@@ -829,9 +828,7 @@ export function ProductModal({ open, onClose, productId, initialMode = "product"
                     onChange={(event) => setFormData((previous) => ({ ...previous, subcategory: event.target.value }))}
                     placeholder="Ex: Slim, King Size, Tradicional..."
                   />
-                  <p className="text-xs text-muted-foreground">
-                    Campo livre para facilitar filtros por tipo interno da categoria.
-                  </p>
+                  <p className="text-xs text-muted-foreground">Usado para filtros internos.</p>
                 </div>
               </>
             )}
@@ -847,26 +844,24 @@ export function ProductModal({ open, onClose, productId, initialMode = "product"
                     <SelectValue placeholder="Selecione" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="categoria">Categoria (padrao)</SelectItem>
+                    <SelectItem value="categoria">Categoria</SelectItem>
                     <SelectItem value="novidades">Novidades (vitrine)</SelectItem>
                     <SelectItem value="mais_vendidos">Mais vendidos</SelectItem>
                   </SelectContent>
                 </Select>
-                <p className="text-xs text-muted-foreground">
-                  Defina em qual vitrine da Home esse produto deve aparecer.
-                </p>
+                <p className="text-xs text-muted-foreground">Define onde o produto aparece na Home.</p>
               </div>
             )}
 
             {isBannerMode && (
-              <p className="text-xs text-muted-foreground">Este cadastro sera salvo como banner de novidades.</p>
+              <p className="text-xs text-muted-foreground">Salvo como banner de novidades.</p>
             )}
 
             {isBannerMode ? (
               <div className="space-y-2">
                 <Label>Categoria</Label>
                 <div className="rounded-md border border-border bg-muted/40 px-3 py-2 text-sm text-foreground">
-                  {CATEGORY_LABELS.banners}
+                  {resolveCategoryLabel("banners", categoryMap, CATEGORY_LABELS.banners)}
                 </div>
                 <div className="h-1 rounded-full bg-amber-600/80" />
               </div>
@@ -881,11 +876,11 @@ export function ProductModal({ open, onClose, productId, initialMode = "product"
                     <SelectValue placeholder="Selecione uma categoria" />
                   </SelectTrigger>
                   <SelectContent>
-                    {categories
-                      .filter((category) => category !== "banners")
+                    {availableCategories
+                      .filter((category) => category.slug !== "banners" && category.isActive !== false)
                       .map((category) => (
-                        <SelectItem key={category} value={category}>
-                          {CATEGORY_LABELS[category]}
+                        <SelectItem key={category.slug} value={category.slug}>
+                          {resolveCategoryLabel(category.slug, categoryMap, category.name)}
                         </SelectItem>
                       ))}
                   </SelectContent>
@@ -893,7 +888,7 @@ export function ProductModal({ open, onClose, productId, initialMode = "product"
                 <div
                   className={cn(
                     "h-1 rounded-full transition-colors",
-                    formData.category ? CATEGORY_COLORS[formData.category] : "bg-muted"
+                    formData.category ? resolveCategoryColor(formData.category) : "bg-muted"
                   )}
                 />
               </div>
@@ -966,9 +961,7 @@ export function ProductModal({ open, onClose, productId, initialMode = "product"
                   </div>
                 ) : null}
 
-                <p className="text-xs text-muted-foreground">
-                  Recomendado: 1920x720. O sistema preserva o formato original sempre que possivel para evitar perda de qualidade.
-                </p>
+                <p className="text-xs text-muted-foreground">Recomendado: 2200x780 ou maior.</p>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
@@ -982,14 +975,14 @@ export function ProductModal({ open, onClose, productId, initialMode = "product"
                       onChange={(event) => setFormData((previous) => ({ ...previous, price: event.target.value }))}
                       placeholder="0.00"
                     />
-                    <p className="text-xs text-muted-foreground">Opcional: usado apenas se o valor for exibido no banner.</p>
+                    <p className="text-xs text-muted-foreground">Opcional.</p>
                   </div>
                 </div>
 
                 <div className="flex items-center justify-between rounded-lg border border-border bg-muted/20 px-3 py-2">
                   <div className="space-y-0.5">
                     <Label htmlFor="show-banner-price">Exibir valor?</Label>
-                    <p className="text-xs text-muted-foreground">Mostra o preco no canto inferior esquerdo do banner.</p>
+                    <p className="text-xs text-muted-foreground">Exibe o preco no banner.</p>
                   </div>
                   <Switch
                     id="show-banner-price"
@@ -1087,9 +1080,7 @@ export function ProductModal({ open, onClose, productId, initialMode = "product"
                   </div>
                 )}
 
-                <p className="text-xs text-muted-foreground">
-                  Recomendado: acima de 1200px no maior lado. O sistema so reduz a imagem quando ela vier grande demais.
-                </p>
+                <p className="text-xs text-muted-foreground">Recomendado: 1200px ou mais no maior lado.</p>
               </div>
             )}
 
@@ -1290,7 +1281,6 @@ export function ProductModal({ open, onClose, productId, initialMode = "product"
             </div>
 
             <p className="text-xs text-muted-foreground">
-              Ajuste livre com preview em tempo real. No modo livre voce escolhe o tamanho do corte dentro dos limites do arquivo redimensionado.
               Resultado estimado: {editorEstimatedWidth} x {editorEstimatedHeight}px.
             </p>
           </DialogBody>

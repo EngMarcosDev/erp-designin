@@ -371,15 +371,15 @@ export default function PedidosPage() {
           <DialogBody className="space-y-4 px-6 py-4">
             {selectedOrder ? (
               <>
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
                   <div className="rounded-lg border border-border bg-muted/25 p-3">
                     <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">Cliente</p>
                     <p className="mt-1 text-sm font-semibold text-foreground">{selectedOrder.customerName}</p>
                   </div>
 
-                  <div className="rounded-lg border border-border bg-muted/25 p-3">
+                  <div className="rounded-lg border border-border bg-muted/25 p-3 sm:col-span-2 xl:col-span-2">
                     <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">Contato</p>
-                    <p className="mt-1 text-sm font-semibold text-foreground">{selectedOrder.email || "-"}</p>
+                    <p className="mt-1 break-all text-sm font-semibold text-foreground">{selectedOrder.email || "-"}</p>
                   </div>
 
                   <div className="rounded-lg border border-border bg-muted/25 p-3">

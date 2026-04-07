@@ -7,6 +7,7 @@ import {
   createCategory,
   createSitePopup,
   deactivateSitePopup,
+  deleteCategory,
   fetchCategories,
   fetchSitePopups,
   reorderCategories,
@@ -24,6 +25,7 @@ import { ProductModal } from "@/components/modals/ProductModal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -140,6 +142,15 @@ export default function SiteContentPage() {
 
   const [categoryForm, setCategoryForm] = useState<CategoryForm>(DEFAULT_CATEGORY_FORM);
   const [editingCategoryId, setEditingCategoryId] = useState<number | null>(null);
+  const [categoryDeleteState, setCategoryDeleteState] = useState<{
+    open: boolean;
+    categoryId: number | null;
+    categoryName: string;
+  }>({
+    open: false,
+    categoryId: null,
+    categoryName: "",
+  });
 
   const popupsQuery = useQuery({
     queryKey: ["erp", "site-popups"],
@@ -253,6 +264,24 @@ export default function SiteContentPage() {
     queryClient.invalidateQueries({ queryKey: ["erp", "categories-manage"] });
   };
 
+  const removeCategory = async () => {
+    if (!categoryDeleteState.categoryId) return;
+
+    try {
+      await deleteCategory(categoryDeleteState.categoryId);
+      toast.success(`Categoria "${categoryDeleteState.categoryName}" removida.`);
+      setCategoryDeleteState({ open: false, categoryId: null, categoryName: "" });
+      if (editingCategoryId === categoryDeleteState.categoryId) {
+        setEditingCategoryId(null);
+        setCategoryForm(DEFAULT_CATEGORY_FORM);
+      }
+      queryClient.invalidateQueries({ queryKey: ["erp", "categories-manage"] });
+      queryClient.invalidateQueries({ queryKey: ["erp", "products"] });
+    } catch (error: any) {
+      toast.error(error?.message || "Falha ao remover categoria.");
+    }
+  };
+
   const loadPopupToForm = (popup: ErpSitePopup) => {
     setSectionOpen((current) => ({ ...current, popups: true }));
     setEditingPopupId(popup.id);
@@ -289,9 +318,7 @@ export default function SiteContentPage() {
     <div className="space-y-6 animate-fade-in">
       <div>
         <h1 className="text-3xl font-bold">Conteudo do Site</h1>
-        <p className="text-muted-foreground">
-          Nova aba para controlar banners, popups e categorias.
-        </p>
+        <p className="text-muted-foreground">Gerencie banners, popups e categorias.</p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
@@ -299,21 +326,21 @@ export default function SiteContentPage() {
           <CardContent className="pt-6">
             <p className="text-sm text-muted-foreground">Banners ativos</p>
             <p className="text-3xl font-bold">{banners.filter((item) => item.active).length}</p>
-            <p className="text-xs text-muted-foreground">Campanhas visiveis na vitrine de novidades.</p>
+            <p className="text-xs text-muted-foreground">Em exibicao no site.</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
             <p className="text-sm text-muted-foreground">Popups configurados</p>
             <p className="text-3xl font-bold">{popups.length}</p>
-            <p className="text-xs text-muted-foreground">Primeiro popup, alarmes e novidades em uma fila ordenada.</p>
+            <p className="text-xs text-muted-foreground">Cadastrados no momento.</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
             <p className="text-sm text-muted-foreground">Categorias gerenciadas</p>
             <p className="text-3xl font-bold">{categories.length}</p>
-            <p className="text-xs text-muted-foreground">Controle de exibicao, slug e ordenacao do menu do site.</p>
+            <p className="text-xs text-muted-foreground">Ativas e inativas.</p>
           </CardContent>
         </Card>
       </div>
@@ -322,7 +349,7 @@ export default function SiteContentPage() {
         <CardHeader className="flex flex-col gap-4 space-y-0 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <CardTitle className="text-xl">Banners</CardTitle>
-            <CardDescription>Botao de Novo Banner movido para esta aba.</CardDescription>
+            <CardDescription>Cadastro e status dos banners.</CardDescription>
           </div>
           <div className="flex w-full flex-wrap items-center justify-between gap-2 sm:w-auto sm:justify-end">
             <Button
@@ -404,7 +431,7 @@ export default function SiteContentPage() {
         <CardHeader className="flex flex-col gap-4 space-y-0 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <CardTitle className="text-xl">Popups</CardTitle>
-            <CardDescription>Primeiro popup + alarmes + novidades.</CardDescription>
+            <CardDescription>Lista e edicao de popups.</CardDescription>
           </div>
           <Button
             variant="ghost"
@@ -428,9 +455,6 @@ export default function SiteContentPage() {
                       <SelectItem value="NEWS">Novidade</SelectItem>
                     </SelectContent>
                   </Select>
-                  <p className="text-xs text-muted-foreground">
-                    Use <strong>Novidade</strong> ou <strong>Alarme</strong> para avisos do site. Deixe <strong>Primeiro popup</strong> apenas para a abertura principal.
-                  </p>
                 </div>
                 <div className="space-y-2">
                   <Label>Nivel</Label>
@@ -470,9 +494,6 @@ export default function SiteContentPage() {
                 <div className="space-y-2">
                   <Label>Imagem URL (opcional)</Label>
                   <Input value={popupForm.imageUrl} onChange={(e) => setPopupForm((p) => ({ ...p, imageUrl: e.target.value }))} />
-                  <p className="text-xs text-muted-foreground">
-                    Se quiser manter tudo mais leve e fluido, prefira os icones internos e use imagem externa so quando realmente precisar.
-                  </p>
                 </div>
               </div>
 
@@ -541,7 +562,7 @@ export default function SiteContentPage() {
 
             <div className="space-y-4">
               <div className="rounded-2xl border p-4">
-                <p className="text-sm font-semibold uppercase tracking-[0.14em] text-muted-foreground">Preview rapido</p>
+                <p className="text-sm font-semibold uppercase tracking-[0.14em] text-muted-foreground">Preview</p>
                 <div className="mt-4 rounded-2xl border bg-muted/20 p-4">
                   <div className="flex items-start gap-3">
                     <img
@@ -557,7 +578,7 @@ export default function SiteContentPage() {
                       </div>
                       <p className="break-words font-semibold leading-tight">{popupForm.title || "Titulo do popup"}</p>
                       <p className="whitespace-pre-line break-words text-sm text-muted-foreground">
-                        {popupForm.message || "Mensagem de exemplo para acompanhar melhor o que vai para o site."}
+                        {popupForm.message || "Mensagem do popup"}
                       </p>
                     </div>
                   </div>
@@ -565,7 +586,7 @@ export default function SiteContentPage() {
               </div>
 
               <div className="space-y-2 rounded-2xl border p-4">
-                <p className="text-sm font-semibold uppercase tracking-[0.14em] text-muted-foreground">Fila de popups</p>
+                <p className="text-sm font-semibold uppercase tracking-[0.14em] text-muted-foreground">Popups cadastrados</p>
                 {popups.map((popup, index) => (
                   <div key={popup.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3">
                     <div className="flex min-w-0 flex-1 items-start gap-3">
@@ -708,6 +729,20 @@ export default function SiteContentPage() {
                     >
                       {category.isActive ? "Desativar" : "Ativar"}
                     </Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() =>
+                        setCategoryDeleteState({
+                          open: true,
+                          categoryId: category.id,
+                          categoryName: category.name,
+                        })
+                      }
+                    >
+                      <Trash2 className="mr-1 h-4 w-4" />
+                      Excluir
+                    </Button>
                   </div>
                 </div>
               ))}
@@ -715,6 +750,38 @@ export default function SiteContentPage() {
           </div>
         </CardContent> : null}
       </Card>
+
+      <Dialog
+        open={categoryDeleteState.open}
+        onOpenChange={(open) => {
+          if (!open) {
+            setCategoryDeleteState({ open: false, categoryId: null, categoryName: "" });
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader className="dialog-titlebar -mx-6 -mt-6 rounded-t-lg px-6 pb-4 pt-6">
+            <DialogTitle>Excluir categoria</DialogTitle>
+          </DialogHeader>
+          <DialogBody className="space-y-3 pt-2 text-sm text-muted-foreground">
+            <p>
+              Voce deseja excluir <strong className="text-foreground">{categoryDeleteState.categoryName}</strong>?
+            </p>
+            <p className="text-xs">A categoria precisa estar sem produtos vinculados para ser removida.</p>
+          </DialogBody>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setCategoryDeleteState({ open: false, categoryId: null, categoryName: "" })}
+            >
+              Cancelar
+            </Button>
+            <Button variant="destructive" onClick={() => void removeCategory()}>
+              Excluir
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <ProductModal
         open={bannerModalOpen}

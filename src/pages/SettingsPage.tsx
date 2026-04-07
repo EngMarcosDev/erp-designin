@@ -117,10 +117,6 @@ export default function SettingsPage() {
               </div>
               <Switch checked={darkMode} onCheckedChange={setDarkMode} />
             </div>
-
-            <div className="rounded-xl border p-4 text-sm text-muted-foreground">
-              A aparencia dos popups agora segue um padrao fixo do sistema para manter a navegacao mais consistente.
-            </div>
           </CardContent>
         </Card>
       </div>

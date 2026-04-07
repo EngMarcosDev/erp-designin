@@ -1,86 +1,69 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Plus, Search, Package, Edit, Eye, Trash2, ImageOff, BadgePercent, Megaphone } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { useERP } from '@/contexts/ERPContext';
-import { formatPrice } from '@/lib/priceFormatter';
-import { Category, CATEGORY_LABELS, CATEGORY_COLORS, LocalSpot, Product } from '@/types/erp';
-import { ProductModal } from '@/components/modals/ProductModal';
-import { DiscountModal } from '@/components/modals/DiscountModal';
-import { cn } from '@/lib/utils';
-import { toast } from 'sonner';
-import { Switch } from '@/components/ui/switch';
-import {
-  Dialog,
-  DialogBody,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { useEffect, useMemo, useState } from "react";
+import { BadgePercent, Edit, Eye, ImageOff, Megaphone, Package, Plus, Search } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Dialog, DialogBody, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useERP } from "@/contexts/ERPContext";
+import { useErpCategories, resolveCategoryColor, resolveCategoryLabel } from "@/hooks/useErpCategories";
+import { formatPrice } from "@/lib/priceFormatter";
+import { LocalSpot, Product } from "@/types/erp";
+import { ProductModal } from "@/components/modals/ProductModal";
+import { DiscountModal } from "@/components/modals/DiscountModal";
+import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50] as const;
 
+const localLabels: Record<LocalSpot, string> = {
+  novidades: "Novidades",
+  mais_vendidos: "Mais vendidos",
+  categoria: "Categoria",
+};
+
+const hasDiscount = (product: Product) =>
+  product.discountActive === true &&
+  product.originalPrice != null &&
+  Number(product.originalPrice) > Number(product.price);
+
+const getProductSnippet = (product: Product) => product.details || product.description || "";
+
 export default function ProdutosPage() {
   const navigate = useNavigate();
-  const { products, toggleProductStatus, deleteProduct } = useERP();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState<string>('all');
-  const [viewFilter, setViewFilter] = useState<'all' | 'products' | 'banners'>('products');
-  const [statusFilter, setStatusFilter] = useState<'active' | 'inactive' | 'all'>('active');
+  const { products, toggleProductStatus } = useERP();
+  const { categories: availableCategories, categoryMap } = useErpCategories(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [viewFilter, setViewFilter] = useState<"all" | "products" | "banners">("products");
+  const [statusFilter, setStatusFilter] = useState<"active" | "inactive" | "all">("active");
   const [pageSize, setPageSize] = useState<number>(10);
   const [page, setPage] = useState<number>(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [createMode, setCreateMode] = useState<'product' | 'banner'>('product');
+  const [createMode, setCreateMode] = useState<"product" | "banner">("product");
   const [isDiscountModalOpen, setIsDiscountModalOpen] = useState(false);
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
   const [previewImage, setPreviewImage] = useState<{ url: string; name: string } | null>(null);
-  const [deleteState, setDeleteState] = useState<{
-    open: boolean;
-    productId: string | null;
-    productName: string;
-    step: 1 | 2;
-  }>({ open: false, productId: null, productName: '', step: 1 });
-
-  const filteredProducts = useMemo(
-    () =>
-      products
-        .filter((product) => {
-          const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase());
-          const matchesCategory = categoryFilter === 'all' || product.category === categoryFilter;
-          const matchesStatus =
-            statusFilter === 'all' || (statusFilter === 'active' ? product.active : !product.active);
-          const isBannerEntry = product.category === 'banners';
-          const matchesView =
-            viewFilter === 'all' ||
-            (viewFilter === 'banners' ? isBannerEntry : !isBannerEntry);
-          return matchesSearch && matchesCategory && matchesStatus && matchesView;
-        })
-        .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR')),
-    [products, searchTerm, categoryFilter, statusFilter, viewFilter]
-  );
 
   const handleEdit = (id: string) => {
-    setCreateMode('product');
+    setCreateMode("product");
     setEditingProductId(id);
     setIsModalOpen(true);
   };
 
   const openProductModal = () => {
-    setCreateMode('product');
+    setCreateMode("product");
     setEditingProductId(null);
     setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setCreateMode("product");
+    setEditingProductId(null);
   };
 
   const handleToggleStatus = (id: string, name: string, currentStatus: boolean) => {
@@ -89,68 +72,60 @@ export default function ProdutosPage() {
         await toggleProductStatus(id);
         toast.success(currentStatus ? `${name} foi desativado` : `${name} foi ativado`);
       } catch (err: any) {
-        toast.error(err?.message || 'Erro ao atualizar status');
+        toast.error(err?.message || "Erro ao atualizar status");
       }
     })();
   };
 
-  const handleRequestDelete = (id: string, name: string) => {
-    setDeleteState({ open: true, productId: id, productName: name, step: 1 });
-  };
+  const visibleCategorySlugs = useMemo(() => {
+    const fromApi = availableCategories
+      .filter((category) => category.isActive !== false)
+      .map((category) => category.slug);
 
-  const closeDeleteDialog = () => {
-    setDeleteState({ open: false, productId: null, productName: '', step: 1 });
-  };
-
-  const handleDelete = async () => {
-    if (!deleteState.productId) return;
-
-    try {
-      await deleteProduct(deleteState.productId);
-      toast.success(`Produto \"${deleteState.productName}\" excluido com sucesso.`);
-      closeDeleteDialog();
-    } catch (err: any) {
-      toast.error(err?.message || 'Erro ao excluir produto');
+    const unique = Array.from(new Set(fromApi));
+    if (viewFilter === "products") {
+      return unique.filter((slug) => slug !== "banners");
     }
-  };
-
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setCreateMode('product');
-    setEditingProductId(null);
-  };
-
-  const categories = Object.keys(CATEGORY_LABELS) as Category[];
-  const visibleCategories = useMemo(() => {
-    if (viewFilter === 'products') {
-      return categories.filter((cat) => cat !== 'banners');
+    if (viewFilter === "banners") {
+      return unique.filter((slug) => slug === "banners");
     }
-    if (viewFilter === 'banners') {
-      return categories.filter((cat) => cat === 'banners');
-    }
-    return categories;
-  }, [categories, viewFilter]);
+    return unique;
+  }, [availableCategories, viewFilter]);
 
   const categoryOptions = useMemo(
-    () => visibleCategories.map((cat) => ({ cat, count: products.filter((p) => p.category === cat).length })),
-    [products, visibleCategories]
+    () =>
+      visibleCategorySlugs.map((slug) => ({
+        slug,
+        count: products.filter((product) => product.category === slug).length,
+      })),
+    [products, visibleCategorySlugs]
   );
 
   useEffect(() => {
-    if (categoryFilter !== 'all' && !visibleCategories.includes(categoryFilter as Category)) {
-      setCategoryFilter('all');
+    if (categoryFilter !== "all" && !visibleCategorySlugs.includes(categoryFilter)) {
+      setCategoryFilter("all");
     }
-  }, [categoryFilter, visibleCategories]);
+  }, [categoryFilter, visibleCategorySlugs]);
+
+  const filteredProducts = useMemo(
+    () =>
+      products
+        .filter((product) => {
+          const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase());
+          const matchesCategory = categoryFilter === "all" || product.category === categoryFilter;
+          const matchesStatus =
+            statusFilter === "all" || (statusFilter === "active" ? product.active : !product.active);
+          const isBannerEntry = product.category === "banners";
+          const matchesView = viewFilter === "all" || (viewFilter === "banners" ? isBannerEntry : !isBannerEntry);
+          return matchesSearch && matchesCategory && matchesStatus && matchesView;
+        })
+        .sort((a, b) => a.name.localeCompare(b.name, "pt-BR")),
+    [products, searchTerm, categoryFilter, statusFilter, viewFilter]
+  );
 
   useEffect(() => {
     setPage(1);
   }, [searchTerm, categoryFilter, viewFilter, statusFilter, pageSize]);
-
-  const localLabels: Record<LocalSpot, string> = {
-    novidades: 'Novidades',
-    mais_vendidos: 'Mais vendidos',
-    categoria: 'Categoria',
-  };
 
   const useListMode = filteredProducts.length > 8;
   const totalPages = Math.max(1, Math.ceil(filteredProducts.length / pageSize));
@@ -166,16 +141,9 @@ export default function ProdutosPage() {
     return filteredProducts.slice(start, start + pageSize);
   }, [filteredProducts, page, pageSize]);
 
-const hasDiscount = (product: Product) =>
-  product.discountActive === true &&
-  product.originalPrice != null &&
-  Number(product.originalPrice) > Number(product.price);
-
-  const getProductSnippet = (product: Product) => product.details || product.description || '';
-
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Produtos</h1>
           <p className="text-muted-foreground">Gerencie seu catalogo de produtos</p>
@@ -185,7 +153,7 @@ const hasDiscount = (product: Product) =>
             <Plus className="h-4 w-4" />
             Novo Produto
           </Button>
-          <Button variant="outline" onClick={() => navigate('/conteudo')} className="gap-2">
+          <Button variant="outline" onClick={() => navigate("/conteudo")} className="gap-2">
             <Megaphone className="h-4 w-4" />
             Abrir Conteudo do Site
           </Button>
@@ -195,47 +163,52 @@ const hasDiscount = (product: Product) =>
             className="gap-2 border border-amber-300 bg-gradient-to-r from-amber-200 via-yellow-100 to-amber-300 text-amber-950 shadow-md hover:brightness-105"
           >
             <BadgePercent className="h-4 w-4" />
-            Novo Desconto
+            Descontos
           </Button>
         </div>
       </div>
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-        {categoryOptions.map(({ cat, count }) => (
-          <div
-            key={cat}
-            className={cn('category-banner cursor-pointer hover:opacity-90 transition-opacity', CATEGORY_COLORS[cat])}
-            onClick={() => setCategoryFilter(cat)}
+
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+        {categoryOptions.map(({ slug, count }) => (
+          <button
+            key={slug}
+            type="button"
+            className={cn(
+              "category-banner cursor-pointer text-left transition-opacity hover:opacity-90",
+              resolveCategoryColor(slug)
+            )}
+            onClick={() => setCategoryFilter(slug)}
           >
-            <p className="text-sm opacity-80">{count} produtos</p>
-            <p className="font-bold">{CATEGORY_LABELS[cat]}</p>
-          </div>
+            <p className="text-sm opacity-80">{count} produto(s)</p>
+            <p className="font-bold">{resolveCategoryLabel(slug, categoryMap)}</p>
+          </button>
         ))}
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-4">
+      <div className="flex flex-col gap-4 sm:flex-row">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Buscar produtos..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(event) => setSearchTerm(event.target.value)}
             className="pl-10"
           />
         </div>
         <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-          <SelectTrigger className="w-full sm:w-48">
+          <SelectTrigger className="w-full sm:w-52">
             <SelectValue placeholder="Categoria" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todas as categorias</SelectItem>
-            {visibleCategories.map((cat) => (
-              <SelectItem key={cat} value={cat}>
-                {CATEGORY_LABELS[cat]}
+            {visibleCategorySlugs.map((slug) => (
+              <SelectItem key={slug} value={slug}>
+                {resolveCategoryLabel(slug, categoryMap)}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
-        <Select value={statusFilter} onValueChange={(value: 'active' | 'inactive' | 'all') => setStatusFilter(value)}>
+        <Select value={statusFilter} onValueChange={(value: "active" | "inactive" | "all") => setStatusFilter(value)}>
           <SelectTrigger className="w-full sm:w-44">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
@@ -245,7 +218,7 @@ const hasDiscount = (product: Product) =>
             <SelectItem value="all">Todos</SelectItem>
           </SelectContent>
         </Select>
-        <Select value={viewFilter} onValueChange={(value: 'all' | 'products' | 'banners') => setViewFilter(value)}>
+        <Select value={viewFilter} onValueChange={(value: "all" | "products" | "banners") => setViewFilter(value)}>
           <SelectTrigger className="w-full sm:w-44">
             <SelectValue placeholder="Tipo" />
           </SelectTrigger>
@@ -277,19 +250,17 @@ const hasDiscount = (product: Product) =>
         <Card>
           <CardContent className="py-12">
             <div className="text-center">
-              <Package className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
+              <Package className="mx-auto mb-4 h-12 w-12 text-muted-foreground/50" />
               <h3 className="text-lg font-medium text-muted-foreground">Nenhum produto encontrado</h3>
-              <p className="text-sm text-muted-foreground/70 mb-4">
-                {searchTerm || categoryFilter !== 'all'
-                  ? 'Tente ajustar os filtros'
-                  : 'Comece adicionando seu primeiro produto'}
+              <p className="mb-4 text-sm text-muted-foreground/70">
+                {searchTerm || categoryFilter !== "all" ? "Tente ajustar os filtros." : "Comece adicionando seu primeiro produto."}
               </p>
-              {!searchTerm && categoryFilter === 'all' && (
+              {!searchTerm && categoryFilter === "all" ? (
                 <Button onClick={openProductModal}>
-                  <Plus className="h-4 w-4 mr-2" />
+                  <Plus className="mr-2 h-4 w-4" />
                   Adicionar Produto
                 </Button>
-              )}
+              ) : null}
             </div>
           </CardContent>
         </Card>
@@ -299,41 +270,42 @@ const hasDiscount = (product: Product) =>
             <div className="divide-y">
               {pagedProducts.map((product) => (
                 <div key={product.id} className="flex items-center gap-3 px-4 py-3 hover:bg-muted/50">
-                  <div className={cn('w-2 h-10 rounded-full', CATEGORY_COLORS[product.category] ?? 'bg-muted')} />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-semibold text-foreground truncate">{product.name}</h3>
+                  <div className={cn("h-10 w-2 rounded-full", resolveCategoryColor(product.category))} />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="truncate font-semibold text-foreground">{product.name}</h3>
                       <Badge variant="secondary" className="text-xs">
-                        {CATEGORY_LABELS[product.category]}
+                        {resolveCategoryLabel(product.category, categoryMap)}
                       </Badge>
                       {product.subcategory ? (
                         <Badge variant="outline" className="text-[11px]">
                           {product.subcategory}
                         </Badge>
                       ) : null}
-                      {product.localSpot && (
+                      {product.localSpot ? (
                         <Badge variant="outline" className="text-[11px]">
                           {localLabels[product.localSpot]}
-                          {product.localSpot === 'categoria' && product.localCategory
-                            ? ` · ${CATEGORY_LABELS[product.localCategory]}`
-                            : ''}
+                          {product.localSpot === "categoria" && product.localCategory
+                            ? ` · ${resolveCategoryLabel(product.localCategory, categoryMap)}`
+                            : ""}
                         </Badge>
-                      )}
-                      {hasDiscount(product) && (
-                        <Badge variant="secondary" className="text-[11px] bg-amber-100 text-amber-900">
-                          {product.discountLabel || 'Com desconto'}
-                        </Badge>
-                      )}
+                      ) : null}
+                      {hasDiscount(product) ? (
+                        <span className="inline-flex items-center rounded-full border border-amber-300 bg-gradient-to-r from-amber-100 via-yellow-50 to-amber-200 px-2.5 py-1 text-[11px] font-semibold text-amber-950 shadow-sm">
+                          {product.discountLabel || "Com desconto"}
+                        </span>
+                      ) : null}
                     </div>
-                    <div className="text-sm text-muted-foreground flex gap-4 mt-1">
+
+                    <div className="mt-1 flex flex-wrap gap-4 text-sm text-muted-foreground">
                       <span>
-                        Preco:{' '}
+                        Preco:{" "}
                         {hasDiscount(product) ? (
                           <>
-                            <span className="line-through opacity-70 mr-2">
+                            <span className="mr-2 line-through opacity-70">
                               {formatPrice(product.originalPrice || 0, { decimals: 2 })}
                             </span>
-                            <strong className="text-foreground">
+                            <strong className="rounded-full bg-amber-100 px-2 py-0.5 text-amber-950 shadow-sm">
                               {formatPrice(product.price, { decimals: 2 })}
                             </strong>
                           </>
@@ -342,44 +314,37 @@ const hasDiscount = (product: Product) =>
                         )}
                       </span>
                       <span>
-                        Estoque:{' '}
-                        <strong className={cn(product.stock < 10 && 'text-status-error')}>
-                          {product.stock} un.
-                        </strong>
+                        Estoque:{" "}
+                        <strong className={cn(product.stock < 10 && "text-status-error")}>{product.stock} un.</strong>
                       </span>
                     </div>
+
                     {getProductSnippet(product) ? (
                       <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">
                         <strong className="text-foreground">Detalhes:</strong> {getProductSnippet(product)}
                       </p>
                     ) : null}
                   </div>
+
                   <Badge
-                    variant={product.active ? 'default' : 'secondary'}
-                    className={cn(product.active ? 'bg-status-success' : 'bg-muted')}
+                    variant={product.active ? "default" : "secondary"}
+                    className={cn(product.active ? "bg-status-success" : "bg-muted")}
                   >
-                    {product.active ? 'Ativo' : 'Inativo'}
+                    {product.active ? "Ativo" : "Inativo"}
                   </Badge>
+
                   <div className="flex gap-2">
                     <Button variant="outline" size="icon" onClick={() => handleEdit(product.id)}>
                       <Edit className="h-4 w-4" />
                     </Button>
                     <div className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-2 py-1">
-                      <span className="text-[11px] text-muted-foreground">{product.active ? 'Ativo' : 'Inativo'}</span>
+                      <span className="text-[11px] text-muted-foreground">{product.active ? "Ativo" : "Inativo"}</span>
                       <Switch
                         checked={product.active}
                         onCheckedChange={() => handleToggleStatus(product.id, product.name, product.active)}
-                        aria-label={product.active ? 'Desativar produto' : 'Ativar produto'}
+                        aria-label={product.active ? "Desativar produto" : "Ativar produto"}
                       />
                     </div>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => handleRequestDelete(product.id, product.name)}
-                      className="text-destructive hover:text-destructive"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
                   </div>
                 </div>
               ))}
@@ -387,15 +352,15 @@ const hasDiscount = (product: Product) =>
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {pagedProducts.map((product) => (
             <Card
               key={product.id}
-              className={cn('overflow-hidden hover:shadow-lg transition-all', !product.active && 'opacity-60')}
+              className={cn("overflow-hidden transition-all hover:shadow-lg", !product.active && "opacity-60")}
             >
-              <div className={cn('h-2', CATEGORY_COLORS[product.category] ?? 'bg-muted')} />
+              <div className={cn("h-2", resolveCategoryColor(product.category))} />
               <div
-                className="relative flex h-32 items-center justify-center overflow-hidden bg-muted/30 group"
+                className="group relative flex h-32 items-center justify-center overflow-hidden bg-muted/30"
                 onClick={() => {
                   const displayImage = product.banner || product.image;
                   if (displayImage) {
@@ -409,12 +374,12 @@ const hasDiscount = (product: Product) =>
                       src={product.banner || product.image}
                       alt={product.name}
                       className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).style.display = 'none';
+                      onError={(event) => {
+                        (event.target as HTMLImageElement).style.display = "none";
                       }}
                     />
-                    <div className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/10 transition-colors flex items-center justify-center">
-                      <Eye className="h-5 w-5 text-foreground opacity-0 group-hover:opacity-70 transition-opacity" />
+                    <div className="absolute inset-0 flex items-center justify-center bg-foreground/0 transition-colors group-hover:bg-foreground/10">
+                      <Eye className="h-5 w-5 text-foreground opacity-0 transition-opacity group-hover:opacity-70" />
                     </div>
                   </>
                 ) : (
@@ -425,11 +390,11 @@ const hasDiscount = (product: Product) =>
                 )}
               </div>
               <CardContent className="p-4">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-foreground truncate">{product.name}</h3>
+                <div className="mb-3 flex items-start justify-between">
+                  <div className="min-w-0 flex-1">
+                    <h3 className="truncate font-semibold text-foreground">{product.name}</h3>
                     <Badge variant="secondary" className="mt-1 text-xs">
-                      {CATEGORY_LABELS[product.category] ?? product.category}
+                      {resolveCategoryLabel(product.category, categoryMap)}
                     </Badge>
                     {product.subcategory ? (
                       <div className="mt-1">
@@ -438,31 +403,32 @@ const hasDiscount = (product: Product) =>
                         </Badge>
                       </div>
                     ) : null}
-                    {hasDiscount(product) && (
+                    {hasDiscount(product) ? (
                       <div className="mt-1">
-                        <Badge variant="secondary" className="text-[11px] bg-amber-100 text-amber-900">
-                          {product.discountLabel || 'Com desconto'}
-                        </Badge>
+                        <span className="inline-flex items-center rounded-full border border-amber-300 bg-gradient-to-r from-amber-100 via-yellow-50 to-amber-200 px-2.5 py-1 text-[11px] font-semibold text-amber-950 shadow-sm">
+                          {product.discountLabel || "Com desconto"}
+                        </span>
                       </div>
-                    )}
-                    {product.localSpot && (
+                    ) : null}
+                    {product.localSpot ? (
                       <div className="mt-1">
                         <Badge variant="outline" className="text-[11px]">
                           {localLabels[product.localSpot]}
-                          {product.localSpot === 'categoria' && product.localCategory
-                            ? ` · ${CATEGORY_LABELS[product.localCategory]}`
-                            : ''}
+                          {product.localSpot === "categoria" && product.localCategory
+                            ? ` · ${resolveCategoryLabel(product.localCategory, categoryMap)}`
+                            : ""}
                         </Badge>
                       </div>
-                    )}
+                    ) : null}
                   </div>
                   <Badge
-                    variant={product.active ? 'default' : 'secondary'}
-                    className={cn('ml-2 shrink-0', product.active ? 'bg-status-success' : 'bg-muted')}
+                    variant={product.active ? "default" : "secondary"}
+                    className={cn("ml-2 shrink-0", product.active ? "bg-status-success" : "bg-muted")}
                   >
-                    {product.active ? 'Ativo' : 'Inativo'}
+                    {product.active ? "Ativo" : "Inativo"}
                   </Badge>
                 </div>
+
                 <div className="space-y-2 text-sm">
                   {getProductSnippet(product) ? (
                     <div className="rounded-xl border border-border/70 bg-muted/20 px-3 py-2">
@@ -470,49 +436,46 @@ const hasDiscount = (product: Product) =>
                       <p className="mt-1 line-clamp-3 text-sm text-foreground/90">{getProductSnippet(product)}</p>
                     </div>
                   ) : null}
+
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Preco:</span>
-                    <span className="font-medium text-right">
+                    <span className="text-right font-medium">
                       {hasDiscount(product) ? (
                         <>
-                          <span className="block line-through opacity-60 text-xs">
+                          <span className="block text-xs opacity-60 line-through">
                             {formatPrice(product.originalPrice || 0, { decimals: 2 })}
                           </span>
-                          <span className="block">{formatPrice(product.price, { decimals: 2 })}</span>
+                          <span className="inline-flex rounded-full bg-amber-100 px-2 py-0.5 text-amber-950 shadow-sm">
+                            {formatPrice(product.price, { decimals: 2 })}
+                          </span>
                         </>
                       ) : (
                         formatPrice(product.price, { decimals: 2 })
                       )}
                     </span>
                   </div>
+
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Estoque:</span>
-                    <span className={cn('font-medium', product.stock < 10 && 'text-status-error')}>
+                    <span className={cn("font-medium", product.stock < 10 && "text-status-error")}>
                       {product.stock} un.
                     </span>
                   </div>
                 </div>
-                <div className="flex gap-2 mt-4">
+
+                <div className="mt-4 flex gap-2">
                   <Button variant="outline" size="sm" className="flex-1" onClick={() => handleEdit(product.id)}>
-                    <Edit className="h-4 w-4 mr-1" />
+                    <Edit className="mr-1 h-4 w-4" />
                     Editar
                   </Button>
                   <div className="inline-flex items-center gap-2 rounded-md border border-border bg-background px-2">
-                    <span className="text-[11px] text-muted-foreground">{product.active ? 'Ativo' : 'Inativo'}</span>
+                    <span className="text-[11px] text-muted-foreground">{product.active ? "Ativo" : "Inativo"}</span>
                     <Switch
                       checked={product.active}
                       onCheckedChange={() => handleToggleStatus(product.id, product.name, product.active)}
-                      aria-label={product.active ? 'Desativar produto' : 'Ativar produto'}
+                      aria-label={product.active ? "Desativar produto" : "Ativar produto"}
                     />
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleRequestDelete(product.id, product.name)}
-                    className="text-destructive hover:text-destructive"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -524,9 +487,9 @@ const hasDiscount = (product: Product) =>
         <div className="flex flex-wrap items-center justify-between gap-2">
           <button
             type="button"
-            className="text-sm px-3 py-1.5 rounded-md border border-border disabled:opacity-50"
+            className="rounded-md border border-border px-3 py-1.5 text-sm disabled:opacity-50"
             disabled={page <= 1}
-            onClick={() => setPage((value) => Math.max(1, value - 1))}
+            onClick={() => setPage((current) => Math.max(1, current - 1))}
           >
             Anterior
           </button>
@@ -534,8 +497,8 @@ const hasDiscount = (product: Product) =>
           <div className="flex items-center gap-1">
             {Array.from({ length: totalPages })
               .slice(0, 7)
-              .map((_, idx) => {
-                const pageNumber = idx + 1;
+              .map((_, index) => {
+                const pageNumber = index + 1;
                 const isCurrent = pageNumber === page;
                 return (
                   <button
@@ -543,10 +506,8 @@ const hasDiscount = (product: Product) =>
                     type="button"
                     onClick={() => setPage(pageNumber)}
                     className={cn(
-                      'h-8 min-w-8 px-2 rounded-md text-sm border',
-                      isCurrent
-                        ? 'bg-primary text-primary-foreground border-primary'
-                        : 'border-border hover:bg-muted'
+                      "h-8 min-w-8 rounded-md border px-2 text-sm",
+                      isCurrent ? "border-primary bg-primary text-primary-foreground" : "border-border hover:bg-muted"
                     )}
                   >
                     {pageNumber}
@@ -557,92 +518,37 @@ const hasDiscount = (product: Product) =>
 
           <button
             type="button"
-            className="text-sm px-3 py-1.5 rounded-md border border-border disabled:opacity-50"
+            className="rounded-md border border-border px-3 py-1.5 text-sm disabled:opacity-50"
             disabled={page >= totalPages}
-            onClick={() => setPage((value) => Math.min(totalPages, value + 1))}
+            onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
           >
             Proxima
           </button>
         </div>
       ) : null}
 
-      <ProductModal
-        open={isModalOpen}
-        onClose={handleCloseModal}
-        productId={editingProductId}
-        initialMode={createMode}
-      />
+      <ProductModal open={isModalOpen} onClose={handleCloseModal} productId={editingProductId} initialMode={createMode} />
       <DiscountModal open={isDiscountModalOpen} onClose={() => setIsDiscountModalOpen(false)} />
 
       <Dialog open={!!previewImage} onOpenChange={() => setPreviewImage(null)}>
         <DialogContent className="sm:max-w-lg">
-          <DialogHeader className="dialog-titlebar -mx-6 -mt-6 px-6 pt-6 pb-4 rounded-t-lg">
+          <DialogHeader className="dialog-titlebar -mx-6 -mt-6 rounded-t-lg px-6 pb-4 pt-6">
             <DialogTitle>{previewImage?.name}</DialogTitle>
           </DialogHeader>
           <DialogBody className="pt-2">
-          <div className="flex min-h-[300px] items-center justify-center rounded-lg bg-muted/30 p-4">
-            {previewImage && (
-              <img
-                src={previewImage.url}
-                alt={previewImage.name}
-                className="max-w-full max-h-[400px] object-contain rounded"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = '/placeholder.svg';
-                }}
-              />
-            )}
-          </div>
+            <div className="flex min-h-[300px] items-center justify-center rounded-lg bg-muted/30 p-4">
+              {previewImage ? (
+                <img
+                  src={previewImage.url}
+                  alt={previewImage.name}
+                  className="max-h-[400px] max-w-full rounded object-contain"
+                  onError={(event) => {
+                    (event.target as HTMLImageElement).src = "/placeholder.svg";
+                  }}
+                />
+              ) : null}
+            </div>
           </DialogBody>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog
-        open={deleteState.open}
-        onOpenChange={(open) => {
-          if (!open) closeDeleteDialog();
-        }}
-      >
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader className="dialog-titlebar -mx-6 -mt-6 px-6 pt-6 pb-4 rounded-t-lg">
-            <DialogTitle>{deleteState.step === 1 ? 'Excluir produto?' : 'Confirmacao final'}</DialogTitle>
-            <DialogDescription className="sr-only">Confirmacao de exclusao de produto</DialogDescription>
-          </DialogHeader>
-
-          <DialogBody className="space-y-3 pt-2 text-sm text-muted-foreground">
-            {deleteState.step === 1 ? (
-              <p>
-                Voce tem certeza que deseja excluir{' '}
-                <strong className="text-foreground">{deleteState.productName}</strong>?
-              </p>
-            ) : (
-              <p>
-                Esta acao e permanente e nao podera ser desfeita. Confirma a exclusao definitiva de{' '}
-                <strong className="text-foreground">{deleteState.productName}</strong>?
-              </p>
-            )}
-          </DialogBody>
-
-          <DialogFooter className="gap-2 sm:gap-0">
-            {deleteState.step === 1 ? (
-              <>
-                <Button variant="outline" onClick={closeDeleteDialog}>
-                  Cancelar
-                </Button>
-                <Button variant="destructive" onClick={() => setDeleteState((prev) => ({ ...prev, step: 2 }))}>
-                  Continuar
-                </Button>
-              </>
-            ) : (
-              <>
-                <Button variant="outline" onClick={() => setDeleteState((prev) => ({ ...prev, step: 1 }))}>
-                  Voltar
-                </Button>
-                <Button variant="destructive" onClick={handleDelete}>
-                  Excluir definitivamente
-                </Button>
-              </>
-            )}
-          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

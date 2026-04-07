@@ -11,7 +11,6 @@ import {
   Key,
   Eye,
   EyeOff,
-  Trash2,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -53,7 +52,7 @@ const formatDateTime = (value: string) =>
   }).format(new Date(value));
 
 export default function UsuariosPage() {
-  const { users, toggleUserStatus, batchToggleUserStatus, updateUser, deleteUser, currentUser } = useERP();
+  const { users, toggleUserStatus, batchToggleUserStatus, updateUser, currentUser } = useERP();
   const { compactTables, showAuditHighlights } = useUISettings();
   const [searchTerm, setSearchTerm] = useState("");
   const [auditSearchTerm, setAuditSearchTerm] = useState("");
@@ -70,11 +69,6 @@ export default function UsuariosPage() {
     active: boolean;
   }>({ open: false, userId: null, userName: "", permissions: [], role: "USUARIO", active: true });
   const [passwordModal, setPasswordModal] = useState<{ open: boolean; userId: string | null; userName: string }>({
-    open: false,
-    userId: null,
-    userName: "",
-  });
-  const [deleteModal, setDeleteModal] = useState<{ open: boolean; userId: string | null; userName: string }>({
     open: false,
     userId: null,
     userName: "",
@@ -221,21 +215,6 @@ export default function UsuariosPage() {
         setShowPassword(false);
       } catch (error: any) {
         toast.error(error?.message || "Erro ao alterar senha.");
-      }
-    })();
-  };
-
-  const handleDeleteUser = () => {
-    if (!deleteModal.userId) return;
-    void (async () => {
-      try {
-        await deleteUser(deleteModal.userId);
-        if (isAdmin) await auditQuery.refetch();
-        toast.success(`Usuario "${deleteModal.userName}" excluido com sucesso.`);
-      } catch (error: any) {
-        toast.error(error?.message || "Erro ao excluir usuario");
-      } finally {
-        setDeleteModal({ open: false, userId: null, userName: "" });
       }
     })();
   };
@@ -481,16 +460,6 @@ export default function UsuariosPage() {
                               aria-label={user.active ? "Desativar usuario" : "Ativar usuario"}
                             />
                           </div>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setDeleteModal({ open: true, userId: user.id, userName: user.name })}
-                            title="Excluir usuario"
-                            disabled={currentUser?.id === user.id}
-                            className="text-destructive hover:text-destructive"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -789,33 +758,6 @@ export default function UsuariosPage() {
               Cancelar
             </Button>
             <Button onClick={handleChangePassword}>Salvar senha</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog
-        open={deleteModal.open}
-        onOpenChange={(open) => {
-          if (!open) setDeleteModal({ open: false, userId: null, userName: "" });
-        }}
-      >
-        <DialogContent className="sm:max-w-sm">
-          <DialogHeader className="dialog-titlebar -mx-6 -mt-6 rounded-t-lg px-6 pb-4 pt-6">
-            <DialogTitle>Excluir usuario</DialogTitle>
-          </DialogHeader>
-          <DialogBody className="space-y-3 pt-2 text-sm text-muted-foreground">
-            <p>
-              Voce tem certeza que deseja excluir <strong className="text-foreground">{deleteModal.userName}</strong>?
-            </p>
-            <p className="text-xs">Esta acao remove definitivamente o usuario do sistema.</p>
-          </DialogBody>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteModal({ open: false, userId: null, userName: "" })}>
-              Cancelar
-            </Button>
-            <Button variant="destructive" onClick={handleDeleteUser}>
-              Excluir
-            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
