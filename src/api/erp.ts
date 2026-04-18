@@ -28,12 +28,25 @@ export interface ErpProduct {
 
 export interface ErpOrder {
   id: number;
+  orderNumber?: string;
   email: string;
   customerName?: string;
-  items: any[];
+  items: Array<{
+    productId: string;
+    productName: string;
+    quantity: number;
+    unitPrice: number;
+    cost?: number;
+  }>;
+  subtotal?: number;
+  shipping?: number;
+  tax?: number;
+  discount?: number;
   total: number;
   createdAt: string;
+  paidAt?: string | null;
   status?: string;
+  paymentStatus?: string;
 }
 
 export interface StockReportItem {
@@ -232,6 +245,20 @@ export const updateOrderStatus = async (
   });
 };
 
+// Desconto do pedido - rota gated para adm.bacaxita@gmail.com no backend.
+// UI deve verificar email do currentUser antes de exibir o controle para
+// evitar flash de botao -> 403.
+export const updateOrderDiscount = async (
+  id: number,
+  discount: number,
+  reason?: string
+): Promise<ErpOrder> => {
+  return request(`/orders/${id}/discount`, {
+    method: "PATCH",
+    body: JSON.stringify({ discount, reason }),
+  });
+};
+
 export const fetchStockReport = async (): Promise<StockReportItem[]> => {
   return request("/reports/stock");
 };
@@ -360,8 +387,13 @@ export const reorderSitePopups = async (orderedIds: number[]): Promise<ErpSitePo
   });
 };
 
-export const deactivateSitePopup = async (id: number): Promise<{ ok: boolean }> => {
+// Popups are promotional/ephemeral content — backend performs a HARD delete here.
+// For auditability we still log a DELETE action on the ERP side.
+export const deleteSitePopup = async (id: number): Promise<{ ok: boolean; deleted?: boolean; id?: number }> => {
   return request(`/site/popups/${id}`, {
     method: "DELETE",
   });
 };
+
+// Backwards-compat alias — kept so older imports keep building while they migrate.
+export const deactivateSitePopup = deleteSitePopup;

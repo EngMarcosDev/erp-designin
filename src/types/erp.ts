@@ -6,12 +6,22 @@ export type UserRole = "ADMIN" | "USUARIO" | "CLIENTE";
 
 export type OrderStatus = "pendente" | "pago" | "enviado" | "cancelado";
 
+// Auditoria feita em 2026-04-18: mapeamos toda a superficie de rotas ERP
+// (products, orders, stock, users, reports, categories, site/popups,
+// users/audit, cupons). Cada area no backend ganhou uma permissao
+// correspondente aqui - assim o grid de permissoes em UsersPage cobre
+// tudo que existe hoje, sem "buracos" onde uma acao ficaria sempre
+// permitida por falta de flag.
 export type Permission =
   | "gerenciar_produtos"
   | "gerenciar_pedidos"
   | "gerenciar_estoque"
   | "gerenciar_usuarios"
-  | "ver_relatorios";
+  | "ver_relatorios"
+  | "gerenciar_categorias"
+  | "gerenciar_site"
+  | "gerenciar_cupons"
+  | "ver_auditoria";
 
 export type LocalSpot = "novidades" | "mais_vendidos" | "categoria";
 
@@ -21,6 +31,10 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   gerenciar_estoque: "Gerenciar estoque",
   gerenciar_usuarios: "Gerenciar usuarios",
   ver_relatorios: "Ver relatorios",
+  gerenciar_categorias: "Gerenciar categorias",
+  gerenciar_site: "Gerenciar site (popups, banners)",
+  gerenciar_cupons: "Gerenciar cupons & descontos",
+  ver_auditoria: "Ver registros de auditoria",
 };
 
 export interface Product {
@@ -76,11 +90,17 @@ export interface AuditLog {
 
 export interface Order {
   id: string;
+  orderNumber?: string;
   email?: string;
   customerName: string;
   items: OrderItem[];
+  subtotal: number;
+  shipping: number;
+  tax: number;
+  discount: number;
   total: number;
   status: OrderStatus;
+  paymentStatus?: string;
   createdAt: Date;
   paidAt?: Date;
 }
@@ -90,6 +110,7 @@ export interface OrderItem {
   productName: string;
   quantity: number;
   unitPrice: number;
+  cost?: number;
 }
 
 export interface StockComparison {
@@ -139,6 +160,10 @@ export const DEFAULT_ADMIN_PERMISSIONS: Permission[] = [
   "gerenciar_estoque",
   "gerenciar_usuarios",
   "ver_relatorios",
+  "gerenciar_categorias",
+  "gerenciar_site",
+  "gerenciar_cupons",
+  "ver_auditoria",
 ];
 
 export const DEFAULT_USER_PERMISSIONS: Permission[] = ["gerenciar_pedidos", "ver_relatorios"];

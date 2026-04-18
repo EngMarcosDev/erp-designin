@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ShoppingCart, DollarSign, Clock, TrendingUp, Eye } from "lucide-react";
+import { ShoppingCart, DollarSign, Clock, TrendingUp, Eye, Pencil, Check, X } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -32,11 +32,15 @@ import { formatPrice } from "@/lib/priceFormatter";
 import { STATUS_LABELS } from "@/types/erp";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import ProfitGauge from "@/components/erp/ProfitGauge";
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50] as const;
+// ACL do campo "Desconto do pedido": somente o super-admin edita.
+// O backend tambem checa; aqui so escondemos a UI para nao gerar 403.
+const SUPER_ADMIN_EMAIL = "adm.bacaxita@gmail.com";
 
 export default function PedidosPage() {
-  const { orders, updateOrderStatus } = useERP();
+  const { orders, updateOrderStatus, updateOrderDiscount, currentUser } = useERP();
   const [pageSize, setPageSize] = useState<number>(10);
   const [page, setPage] = useState<number>(1);
   const [statusFilter, setStatusFilter] = useState<"all" | "pendente" | "pago" | "cancelado">("all");
@@ -44,6 +48,14 @@ export default function PedidosPage() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+
+  // Edicao do desconto dentro do dialog
+  const [discountEditing, setDiscountEditing] = useState(false);
+  const [discountDraft, setDiscountDraft] = useState("");
+  const [discountReason, setDiscountReason] = useState("");
+  const [discountSaving, setDiscountSaving] = useState(false);
+
+  const canEditDiscount = currentUser?.email?.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase();
 
   const totalOrders = orders.length;
   const paidOrders = orders.filter((o) => o.status === "pago" || o.status === "enviado").length;
@@ -155,6 +167,48 @@ export default function PedidosPage() {
     }
   };
 
+  const beginEditDiscount = () => {
+    if (!selectedOrder || !canEditDiscount) return;
+    setDiscountDraft(selectedOrder.discount ? String(selectedOrder.discount.toFixed(2)) : "");
+    setDiscountReason("");
+    setDiscountEditing(true);
+  };
+
+  const cancelEditDiscount = () => {
+    setDiscountEditing(false);
+    setDiscountDraft("");
+    setDiscountReason("");
+  };
+
+  const handleSaveDiscount = async () => {
+    if (!selectedOrder) return;
+    const parsed = Number(String(discountDraft).replace(",", "."));
+    if (!Number.isFinite(parsed) || parsed < 0) {
+      toast.error("Informe um valor valido (maior ou igual a 0).");
+      return;
+    }
+    const ceiling = selectedOrder.subtotal + selectedOrder.shipping + selectedOrder.tax;
+    if (parsed > ceiling) {
+      toast.error(`Desconto nao pode passar de R$ ${ceiling.toFixed(2)} (subtotal + frete + taxas).`);
+      return;
+    }
+    try {
+      setDiscountSaving(true);
+      await updateOrderDiscount(selectedOrder.id, parsed, discountReason.trim() || undefined);
+      toast.success(`Desconto atualizado para R$ ${parsed.toFixed(2)}.`);
+      cancelEditDiscount();
+    } catch (error: any) {
+      toast.error(error?.message || "Erro ao atualizar desconto do pedido.");
+    } finally {
+      setDiscountSaving(false);
+    }
+  };
+
+  // Fecha a edicao automatica se o dialog fechar ou o pedido mudar
+  useEffect(() => {
+    cancelEditDiscount();
+  }, [selectedOrderId]);
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div>
@@ -162,20 +216,25 @@ export default function PedidosPage() {
         <p className="text-muted-foreground">Gerencie pedidos com filtros e navegacao</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map((stat) => (
-          <Card key={stat.title} className="hover:shadow-md transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">{stat.title}</CardTitle>
-              <div className={cn("p-2 rounded-lg", stat.color)}>
-                <stat.icon className="h-4 w-4" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stat.value}</div>
-            </CardContent>
-          </Card>
-        ))}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        {/* Stats agrupados em 2 colunas; velocimetro ocupa 1 coluna larga */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:col-span-2">
+          {stats.map((stat) => (
+            <Card key={stat.title} className="hover:shadow-md transition-shadow">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">{stat.title}</CardTitle>
+                <div className={cn("p-2 rounded-lg", stat.color)}>
+                  <stat.icon className="h-4 w-4" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stat.value}</div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        <ProfitGauge orders={orders} />
       </div>
 
       <Card>
@@ -395,6 +454,105 @@ export default function PedidosPage() {
                       {formatPrice(selectedOrder.total, { decimals: 2 })}
                     </p>
                   </div>
+                </div>
+
+                <div className="rounded-xl border border-border bg-background">
+                  <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3">
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">Resumo financeiro</p>
+                      <p className="text-xs text-muted-foreground">
+                        Desconto do pedido eh exclusivo do administrador principal.
+                      </p>
+                    </div>
+                    {canEditDiscount && !discountEditing ? (
+                      <Button type="button" variant="outline" size="sm" className="gap-1" onClick={beginEditDiscount}>
+                        <Pencil className="h-3.5 w-3.5" />
+                        Editar desconto
+                      </Button>
+                    ) : null}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 px-4 py-4 sm:grid-cols-4">
+                    <div className="rounded-lg border border-border bg-muted/25 p-3">
+                      <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">Subtotal</p>
+                      <p className="mt-1 text-sm font-semibold text-foreground">
+                        {formatPrice(selectedOrder.subtotal, { decimals: 2 })}
+                      </p>
+                    </div>
+                    <div className="rounded-lg border border-border bg-muted/25 p-3">
+                      <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">Frete</p>
+                      <p className="mt-1 text-sm font-semibold text-foreground">
+                        {formatPrice(selectedOrder.shipping, { decimals: 2 })}
+                      </p>
+                    </div>
+                    <div className="rounded-lg border border-primary/30 bg-primary/5 p-3">
+                      <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">Desconto do pedido</p>
+                      <p className="mt-1 text-sm font-semibold text-foreground">
+                        - {formatPrice(selectedOrder.discount, { decimals: 2 })}
+                      </p>
+                    </div>
+                    <div className="rounded-lg border border-accent/40 bg-accent/5 p-3">
+                      <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">Total final</p>
+                      <p className="mt-1 text-sm font-bold text-foreground">
+                        {formatPrice(selectedOrder.total, { decimals: 2 })}
+                      </p>
+                    </div>
+                  </div>
+
+                  {canEditDiscount && discountEditing ? (
+                    <div className="space-y-3 border-t border-border bg-muted/15 px-4 py-4">
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                        <div className="space-y-1 sm:col-span-1">
+                          <label className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                            Novo desconto (R$)
+                          </label>
+                          <Input
+                            type="number"
+                            inputMode="decimal"
+                            min={0}
+                            step="0.01"
+                            placeholder="0,00"
+                            value={discountDraft}
+                            onChange={(event) => setDiscountDraft(event.target.value)}
+                          />
+                        </div>
+                        <div className="space-y-1 sm:col-span-2">
+                          <label className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                            Motivo / observacao (opcional)
+                          </label>
+                          <Input
+                            type="text"
+                            placeholder="Ex: cortesia por atraso"
+                            maxLength={240}
+                            value={discountReason}
+                            onChange={(event) => setDiscountReason(event.target.value)}
+                          />
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap items-center justify-end gap-2">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          className="gap-1"
+                          onClick={cancelEditDiscount}
+                          disabled={discountSaving}
+                        >
+                          <X className="h-4 w-4" /> Cancelar
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          className="gap-1"
+                          onClick={handleSaveDiscount}
+                          disabled={discountSaving}
+                        >
+                          <Check className="h-4 w-4" />
+                          {discountSaving ? "Salvando..." : "Salvar desconto"}
+                        </Button>
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
 
                 <div className="rounded-xl border border-border bg-background">

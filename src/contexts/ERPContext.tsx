@@ -22,6 +22,7 @@ import {
   deleteUser as apiDeleteUser,
   fetchOrders as apiFetchOrders,
   updateOrderStatus as apiUpdateOrderStatus,
+  updateOrderDiscount as apiUpdateOrderDiscount,
   fetchStockComparison as apiFetchStockComparison,
   syncStockPull,
   syncStockPush,
@@ -50,6 +51,7 @@ interface ERPContextType {
   // Orders
   orders: Order[];
   updateOrderStatus: (id: string, status: Order["status"]) => AsyncVoid;
+  updateOrderDiscount: (id: string, discount: number, reason?: string) => AsyncVoid;
 
   // Stock
   stockComparison: StockComparison[];
@@ -132,6 +134,12 @@ export function ERPProvider({ children }: { children: ReactNode }) {
   const updateOrderStatusMut = useMutation({
     mutationFn: ({ id, status }: { id: number; status: "pendente" | "pago" | "cancelado" }) =>
       apiUpdateOrderStatus(id, status),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["erp", "orders"] }),
+  });
+
+  const updateOrderDiscountMut = useMutation({
+    mutationFn: ({ id, discount, reason }: { id: number; discount: number; reason?: string }) =>
+      apiUpdateOrderDiscount(id, discount, reason),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["erp", "orders"] }),
   });
 
@@ -248,11 +256,23 @@ export function ERPProvider({ children }: { children: ReactNode }) {
     const list = Array.isArray(ordersQuery.data) ? ordersQuery.data : [];
     return list.map((o) => ({
       id: String(o.id),
+      orderNumber: o.orderNumber,
       customerName: o.customerName || o.email || "Cliente",
       email: o.email || "cliente@desconhecido.com",
-      items: Array.isArray(o.items) ? o.items : [],
+      items: (Array.isArray(o.items) ? o.items : []).map((item: any) => ({
+        productId: String(item.productId),
+        productName: String(item.productName || "Produto"),
+        quantity: Number(item.quantity || 0),
+        unitPrice: Number(item.unitPrice || 0),
+        cost: Number(item.cost || 0),
+      })),
+      subtotal: Number((o as any).subtotal || 0),
+      shipping: Number((o as any).shipping || 0),
+      tax: Number((o as any).tax || 0),
+      discount: Number((o as any).discount || 0),
       total: Number(o.total || 0),
       status: (o.status || "pendente") as Order["status"],
+      paymentStatus: (o as any).paymentStatus,
       createdAt: o.createdAt ? new Date(o.createdAt) : new Date(),
       paidAt: o.paidAt ? new Date(o.paidAt) : undefined,
     }));
@@ -413,6 +433,14 @@ export function ERPProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  const updateOrderDiscount: ERPContextType["updateOrderDiscount"] = async (id, discount, reason) => {
+    await updateOrderDiscountMut.mutateAsync({
+      id: Number(id),
+      discount,
+      reason,
+    });
+  };
+
   const refreshStockComparison: ERPContextType["refreshStockComparison"] = async () => {
     await queryClient.invalidateQueries({ queryKey: ["erp", "stock-compare"] });
   };
@@ -445,6 +473,7 @@ export function ERPProvider({ children }: { children: ReactNode }) {
         updateUserPermissions,
         orders: mappedOrders,
         updateOrderStatus,
+        updateOrderDiscount,
         stockComparison: mappedStock,
         refreshStockComparison,
         syncToHeadshop,

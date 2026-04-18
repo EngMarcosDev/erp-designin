@@ -6,7 +6,7 @@ import { useERP } from "@/contexts/ERPContext";
 import {
   createCategory,
   createSitePopup,
-  deactivateSitePopup,
+  deleteSitePopup,
   deleteCategory,
   fetchCategories,
   fetchSitePopups,
@@ -636,15 +636,24 @@ export default function SiteContentPage() {
                         variant="destructive"
                         size="sm"
                         disabled={popupActionKey !== null}
-                        onClick={() =>
+                        onClick={() => {
+                          if (
+                            typeof window !== "undefined" &&
+                            !window.confirm(
+                              `Excluir definitivamente o popup "${popup.title}"?\n\nEssa acao nao pode ser desfeita.`
+                            )
+                          ) {
+                            return;
+                          }
                           void runPopupAction(`remove-${popup.id}`, async () => {
-                            await deactivateSitePopup(popup.id);
+                            await deleteSitePopup(popup.id);
                             await queryClient.invalidateQueries({ queryKey: ["erp", "site-popups"] });
-                          })
-                        }
+                            toast.success("Popup excluido.");
+                          });
+                        }}
                       >
                         <Trash2 className="mr-1 h-4 w-4" />
-                        {popupActionKey === `remove-${popup.id}` ? "Removendo..." : "Remover da fila"}
+                        {popupActionKey === `remove-${popup.id}` ? "Excluindo..." : "Excluir"}
                       </Button>
                     </div>
                   </div>
