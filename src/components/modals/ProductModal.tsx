@@ -661,7 +661,9 @@ export function ProductModal({ open, onClose, productId, initialMode = "product"
     event.preventDefault();
     setIsLoading(true);
 
-    if (!formData.name.trim()) {
+    // Nome e obrigatorio apenas para produtos comuns; banners podem omiti-lo
+    // pois o texto esta na propria imagem editada pelo usuario.
+    if (!isBannerMode && !formData.name.trim()) {
       toast.error("Nome do produto e obrigatorio");
       setIsLoading(false);
       return;
@@ -700,7 +702,8 @@ export function ProductModal({ open, onClose, productId, initialMode = "product"
       subcategory: formData.subcategory.trim() || undefined,
       material: formData.material.trim() || undefined,
       stock,
-      image: isBannerMode ? undefined : normalizedGallery[0] || undefined,
+      // Para banners: image = versão mobile, banner = versão desktop.
+      image: isBannerMode ? (formData.image.trim() || undefined) : normalizedGallery[0] || undefined,
       gallery: isBannerMode ? undefined : normalizedGallery,
       banner: isBannerMode ? formData.banner.trim() || undefined : undefined,
       showBannerPrice: isBannerMode ? formData.showBannerPrice : false,
@@ -735,13 +738,20 @@ export function ProductModal({ open, onClose, productId, initialMode = "product"
           <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
             <DialogBody className="space-y-4 px-6 py-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Nome do Produto</Label>
+              <Label htmlFor="name">
+                {isBannerMode ? "Nome do Banner (opcional)" : "Nome do Produto"}
+              </Label>
               <Input
                 id="name"
                 value={formData.name}
                 onChange={(event) => setFormData((previous) => ({ ...previous, name: event.target.value }))}
-                placeholder="Ex: Seda Premium"
+                placeholder={isBannerMode ? "Ex: Promoção de Verão (opcional)" : "Ex: Seda Premium"}
               />
+              {isBannerMode && (
+                <p className="text-xs text-muted-foreground">
+                  O texto ficará na imagem — não é exibido por cima do banner.
+                </p>
+              )}
             </div>
 
             {!isBannerMode && (
@@ -896,7 +906,7 @@ export function ProductModal({ open, onClose, productId, initialMode = "product"
 
             {isBannerMode ? (
               <div className="space-y-2">
-                <Label>Banner principal (novidades)</Label>
+                <Label>Banner Desktop (paisagem larga)</Label>
 
                 <div className="flex flex-wrap gap-2">
                   <input
@@ -961,9 +971,46 @@ export function ProductModal({ open, onClose, productId, initialMode = "product"
                   </div>
                 ) : null}
 
-                <p className="text-xs text-muted-foreground">Recomendado: 2200x780 ou maior.</p>
+                <p className="text-xs text-muted-foreground">Recomendado: 2200×780px ou mais largo (paisagem).</p>
+              </div>
+            ) : null}
 
-                <div className="grid grid-cols-2 gap-4">
+            {isBannerMode ? (
+              <div className="space-y-2">
+                <Label>Banner Mobile (quadrado ou retrato)</Label>
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <ImageIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      value={formData.image}
+                      onChange={(e) => setFormData((p) => ({ ...p, image: e.target.value }))}
+                      placeholder="https://exemplo.com/banner-mobile.jpg"
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+                {formData.image && formData.image !== formData.banner ? (
+                  <div className="mt-2 rounded-lg overflow-hidden border bg-muted/30 h-24 flex items-center justify-center relative">
+                    <img src={formData.image} alt="Preview mobile" className="max-h-full max-w-full object-contain" />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute top-1 right-1 text-xs text-destructive h-6"
+                      onClick={() => setFormData((p) => ({ ...p, image: "" }))}
+                    >
+                      Remover
+                    </Button>
+                  </div>
+                ) : null}
+                <p className="text-xs text-muted-foreground">
+                  Recomendado: 780×780px (quadrado) ou 780×1000px (retrato). Se vazio, usa o desktop.
+                </p>
+              </div>
+            ) : null}
+
+            {isBannerMode ? (
+              <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="banner-price">Valor do banner (R$)</Label>
                     <Input

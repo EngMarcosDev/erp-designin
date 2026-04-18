@@ -16,12 +16,14 @@ const ReportsPage = lazy(() => import("@/pages/ReportsPage"));
 const LoginPage = lazy(() => import("@/pages/LoginPage"));
 const SettingsPage = lazy(() => import("@/pages/SettingsPage"));
 const SiteContentPage = lazy(() => import("@/pages/SiteContentPage"));
+const CostosPage = lazy(() => import("@/pages/CostosPage"));
 
 const routeOrder: Array<{ path: string; permission: Permission }> = [
   { path: "/pedidos", permission: "gerenciar_pedidos" },
   { path: "/produtos", permission: "gerenciar_produtos" },
   { path: "/usuarios", permission: "gerenciar_usuarios" },
   { path: "/estoque", permission: "gerenciar_estoque" },
+  { path: "/custos", permission: "ver_relatorios" },
   { path: "/relatorios", permission: "ver_relatorios" },
   { path: "/conteudo", permission: "gerenciar_produtos" },
   { path: "/configuracoes", permission: "gerenciar_usuarios" },
@@ -129,6 +131,17 @@ const App = () => (
                   <PrivateRoute requiredPermission="gerenciar_estoque">
                     <MainLayout>
                       <StockPage />
+                    </MainLayout>
+                  </PrivateRoute>
+                }
+              />
+
+              <Route
+                path="/custos"
+                element={
+                  <PrivateRoute requiredPermission="ver_relatorios">
+                    <MainLayout>
+                      <CostosPage />
                     </MainLayout>
                   </PrivateRoute>
                 }

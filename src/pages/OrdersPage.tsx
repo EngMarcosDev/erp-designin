@@ -35,9 +35,6 @@ import { toast } from "sonner";
 import ProfitGauge from "@/components/erp/ProfitGauge";
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50] as const;
-// ACL do campo "Desconto do pedido": somente o super-admin edita.
-// O backend tambem checa; aqui so escondemos a UI para nao gerar 403.
-const SUPER_ADMIN_EMAIL = "adm.bacaxita@gmail.com";
 
 export default function PedidosPage() {
   const { orders, updateOrderStatus, updateOrderDiscount, currentUser } = useERP();
@@ -49,13 +46,14 @@ export default function PedidosPage() {
   const [dateTo, setDateTo] = useState("");
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
 
-  // Edicao do desconto dentro do dialog
+  // Edicao do desconto dentro do dialog - disponivel para qualquer usuario autenticado
   const [discountEditing, setDiscountEditing] = useState(false);
   const [discountDraft, setDiscountDraft] = useState("");
   const [discountReason, setDiscountReason] = useState("");
   const [discountSaving, setDiscountSaving] = useState(false);
 
-  const canEditDiscount = currentUser?.email?.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase();
+  // Qualquer usuario ERP autenticado pode editar o desconto
+  const canEditDiscount = Boolean(currentUser);
 
   const totalOrders = orders.length;
   const paidOrders = orders.filter((o) => o.status === "pago" || o.status === "enviado").length;

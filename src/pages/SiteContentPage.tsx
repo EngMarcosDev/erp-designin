@@ -697,7 +697,18 @@ export default function SiteContentPage() {
               </div>
               <div className="space-y-2">
                 <Label>Imagem URL (opcional)</Label>
-                <Input value={categoryForm.image} onChange={(e) => setCategoryForm((c) => ({ ...c, image: e.target.value }))} />
+                <Input value={categoryForm.image} onChange={(e) => setCategoryForm((c) => ({ ...c, image: e.target.value }))} placeholder="https://exemplo.com/icone.jpg" />
+                {categoryForm.image.trim() && (
+                  <div className="flex items-center gap-3 rounded-lg border bg-muted/30 p-2">
+                    <img
+                      src={categoryForm.image.trim()}
+                      alt="Preview do ícone"
+                      className="h-12 w-12 rounded-full object-cover border border-border"
+                      onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+                    />
+                    <p className="text-xs text-muted-foreground">Preview do ícone da categoria</p>
+                  </div>
+                )}
               </div>
               <div className="flex items-center justify-between rounded-lg border p-3">
                 <span className="text-sm">Categoria ativa</span>

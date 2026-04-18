@@ -56,6 +56,12 @@ export default function UsuariosPage() {
   const { compactTables, showAuditHighlights } = useUISettings();
   const [searchTerm, setSearchTerm] = useState("");
   const [auditSearchTerm, setAuditSearchTerm] = useState("");
+  const [auditEntityFilter, setAuditEntityFilter] = useState("all");
+  const [auditActionFilter, setAuditActionFilter] = useState("all");
+  const [auditDateFrom, setAuditDateFrom] = useState("");
+  const [auditDateTo, setAuditDateTo] = useState("");
+  const [auditPage, setAuditPage] = useState(1);
+  const AUDIT_PAGE_SIZE = 20;
   const [statusFilter, setStatusFilter] = useState<"active" | "inactive" | "all">("active");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
@@ -105,30 +111,53 @@ export default function UsuariosPage() {
     [users, statusFilter]
   );
 
-  const auditLogs = useMemo(() => {
+  const auditEntities = useMemo(() => {
+    const entities = Array.from(new Set((auditQuery.data ?? []).map((e) => e.entity).filter(Boolean)));
+    return entities.sort();
+  }, [auditQuery.data]);
+
+  const auditActions = useMemo(() => {
+    const actions = Array.from(new Set((auditQuery.data ?? []).map((e) => e.action).filter(Boolean)));
+    return actions.sort();
+  }, [auditQuery.data]);
+
+  const auditLogsFiltered = useMemo(() => {
     const list = auditQuery.data ?? [];
     const query = auditSearchTerm.trim().toLowerCase();
-    if (!query) return list;
+    const dateFrom = auditDateFrom ? new Date(auditDateFrom).getTime() : null;
+    const dateTo = auditDateTo ? new Date(auditDateTo + "T23:59:59").getTime() : null;
 
     return list.filter((entry) => {
-      const haystack = [
-        entry.summary,
-        entry.actionLabel,
-        entry.entityLabel,
-        entry.actor?.name,
-        entry.actor?.email,
-        entry.targetLabel,
-        entry.targetUser?.name,
-        entry.targetUser?.email,
-        ...(entry.changedFields ?? []),
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
-
-      return haystack.includes(query);
+      if (auditEntityFilter !== "all" && entry.entity !== auditEntityFilter) return false;
+      if (auditActionFilter !== "all" && entry.action !== auditActionFilter) return false;
+      if (dateFrom && new Date(entry.createdAt).getTime() < dateFrom) return false;
+      if (dateTo && new Date(entry.createdAt).getTime() > dateTo) return false;
+      if (query) {
+        const haystack = [
+          entry.summary,
+          entry.actionLabel,
+          entry.entityLabel,
+          entry.actor?.name,
+          entry.actor?.email,
+          entry.targetLabel,
+          entry.targetUser?.name,
+          entry.targetUser?.email,
+          ...(entry.changedFields ?? []),
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+        if (!haystack.includes(query)) return false;
+      }
+      return true;
     });
-  }, [auditQuery.data, auditSearchTerm]);
+  }, [auditQuery.data, auditSearchTerm, auditEntityFilter, auditActionFilter, auditDateFrom, auditDateTo]);
+
+  const auditTotalPages = Math.max(1, Math.ceil(auditLogsFiltered.length / AUDIT_PAGE_SIZE));
+  const auditLogs = useMemo(
+    () => auditLogsFiltered.slice((auditPage - 1) * AUDIT_PAGE_SIZE, auditPage * AUDIT_PAGE_SIZE),
+    [auditLogsFiltered, auditPage]
+  );
 
   const sensitiveAuditCount = useMemo(
     () =>
@@ -559,19 +588,51 @@ export default function UsuariosPage() {
         {/* AUDITORIA */}
         {isAdmin ? (
           <TabsContent value="auditoria" className="space-y-4">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="relative flex-1 max-w-md">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="relative">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
-                  placeholder="Filtrar auditoria por acao, entidade ou detalhe..."
+                  placeholder="Buscar na auditoria..."
                   value={auditSearchTerm}
-                  onChange={(event) => setAuditSearchTerm(event.target.value)}
+                  onChange={(e) => { setAuditSearchTerm(e.target.value); setAuditPage(1); }}
                   className="pl-10"
                 />
               </div>
-              <Button variant="outline" onClick={() => void auditQuery.refetch()}>
-                Atualizar auditoria
-              </Button>
+              <Select value={auditEntityFilter} onValueChange={(v) => { setAuditEntityFilter(v); setAuditPage(1); }}>
+                <SelectTrigger><SelectValue placeholder="Entidade" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas entidades</SelectItem>
+                  {auditEntities.map((e) => <SelectItem key={e} value={e}>{e}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Select value={auditActionFilter} onValueChange={(v) => { setAuditActionFilter(v); setAuditPage(1); }}>
+                <SelectTrigger><SelectValue placeholder="Acao" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas acoes</SelectItem>
+                  {auditActions.map((a) => <SelectItem key={a} value={a}>{a}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <div className="flex gap-2">
+                <Input type="date" value={auditDateFrom} onChange={(e) => { setAuditDateFrom(e.target.value); setAuditPage(1); }} className="text-xs" />
+                <Input type="date" value={auditDateTo} onChange={(e) => { setAuditDateTo(e.target.value); setAuditPage(1); }} className="text-xs" />
+              </div>
+            </div>
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">
+                {auditLogsFiltered.length} registro(s) encontrado(s)
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => { setAuditSearchTerm(""); setAuditEntityFilter("all"); setAuditActionFilter("all"); setAuditDateFrom(""); setAuditDateTo(""); setAuditPage(1); }}
+                >
+                  Limpar filtros
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => void auditQuery.refetch()}>
+                  Atualizar
+                </Button>
+              </div>
             </div>
 
             <Card>
@@ -629,6 +690,22 @@ export default function UsuariosPage() {
                 )}
               </CardContent>
             </Card>
+
+            {auditTotalPages > 1 && (
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-muted-foreground">
+                  Pag. {auditPage} / {auditTotalPages}
+                </p>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" disabled={auditPage <= 1} onClick={() => setAuditPage((p) => Math.max(1, p - 1))}>
+                    Anterior
+                  </Button>
+                  <Button variant="outline" size="sm" disabled={auditPage >= auditTotalPages} onClick={() => setAuditPage((p) => Math.min(auditTotalPages, p + 1))}>
+                    Proxima
+                  </Button>
+                </div>
+              </div>
+            )}
           </TabsContent>
         ) : null}
       </Tabs>
