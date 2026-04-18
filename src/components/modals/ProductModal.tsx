@@ -1010,7 +1010,8 @@ export function ProductModal({ open, onClose, productId, initialMode = "product"
             ) : null}
 
             {isBannerMode ? (
-              <div className="grid grid-cols-2 gap-4">
+              <>
+                <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="banner-price">Valor do banner (R$)</Label>
                     <Input
@@ -1037,7 +1038,7 @@ export function ProductModal({ open, onClose, productId, initialMode = "product"
                     onCheckedChange={(checked) => setFormData((previous) => ({ ...previous, showBannerPrice: checked }))}
                   />
                 </div>
-              </div>
+              </>
             ) : (
               <div className="space-y-2">
                 <Label>Galeria de imagens do produto</Label>
