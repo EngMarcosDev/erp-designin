@@ -397,3 +397,44 @@ export const deleteSitePopup = async (id: number): Promise<{ ok: boolean; delete
 
 // Backwards-compat alias — kept so older imports keep building while they migrate.
 export const deactivateSitePopup = deleteSitePopup;
+
+// ─── Cupons ───────────────────────────────────────────────────────────────────
+
+export interface ErpCoupon {
+  id: number;
+  code: string;
+  description?: string | null;
+  type: "PERCENT" | "FIXED";
+  value: number;
+  minOrderValue?: number | null;
+  maxUses?: number | null;
+  usedCount: number;
+  isActive: boolean;
+  startsAt?: string | null;
+  expiresAt?: string | null;
+  createdAt: string;
+}
+
+export const fetchCoupons = async (): Promise<ErpCoupon[]> => {
+  return request("/coupons");
+};
+
+export const createCoupon = async (payload: Omit<ErpCoupon, "id" | "usedCount" | "createdAt">): Promise<ErpCoupon> => {
+  return request("/coupons", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+};
+
+export const updateCoupon = async (id: number, payload: Partial<ErpCoupon>): Promise<ErpCoupon> => {
+  return request(`/coupons/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+};
+
+export const deleteCoupon = async (id: number): Promise<{ ok: boolean }> => {
+  return request(`/coupons/${id}`, {
+    method: "DELETE",
+  });
+};

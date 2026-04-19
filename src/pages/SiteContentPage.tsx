@@ -133,6 +133,8 @@ export default function SiteContentPage() {
     categories: false,
   });
   const [popupActionKey, setPopupActionKey] = useState<string | null>(null);
+  const [popupPage, setPopupPage] = useState(1);
+  const POPUP_PAGE_SIZE = 3;
 
   const [bannerModalOpen, setBannerModalOpen] = useState(false);
   const [editingBannerId, setEditingBannerId] = useState<string | null>(null);
@@ -168,6 +170,8 @@ export default function SiteContentPage() {
   );
 
   const popups = popupsQuery.data ?? [];
+  const popupTotalPages = Math.max(1, Math.ceil(popups.length / POPUP_PAGE_SIZE));
+  const pagedPopups = popups.slice((popupPage - 1) * POPUP_PAGE_SIZE, popupPage * POPUP_PAGE_SIZE);
   const categories = [...(categoriesQuery.data ?? [])].sort(
     (a, b) => Number(a.position || 0) - Number(b.position || 0)
   );
@@ -586,8 +590,12 @@ export default function SiteContentPage() {
               </div>
 
               <div className="space-y-2 rounded-2xl border p-4">
-                <p className="text-sm font-semibold uppercase tracking-[0.14em] text-muted-foreground">Popups cadastrados</p>
-                {popups.map((popup, index) => (
+                <p className="text-sm font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                  Popups cadastrados ({popups.length})
+                </p>
+                {pagedPopups.map((popup, index) => {
+                  const globalIndex = (popupPage - 1) * POPUP_PAGE_SIZE + index;
+                  return (
                   <div key={popup.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3">
                     <div className="flex min-w-0 flex-1 items-start gap-3">
                       <img src={popupIconUrl(popup)} alt={popup.title} className="h-10 w-10 rounded-full border object-cover" />
@@ -605,7 +613,7 @@ export default function SiteContentPage() {
                       <Button
                         variant="outline"
                         size="icon"
-                        disabled={index === 0 || popupActionKey !== null}
+                        disabled={globalIndex === 0 || popupActionKey !== null}
                         onClick={() => void runPopupAction(`move-up-${popup.id}`, () => movePopup(popup.id, "up"))}
                       >
                         <ArrowUp className="h-4 w-4" />
@@ -613,7 +621,7 @@ export default function SiteContentPage() {
                       <Button
                         variant="outline"
                         size="icon"
-                        disabled={index === popups.length - 1 || popupActionKey !== null}
+                        disabled={globalIndex === popups.length - 1 || popupActionKey !== null}
                         onClick={() => void runPopupAction(`move-down-${popup.id}`, () => movePopup(popup.id, "down"))}
                       >
                         <ArrowDown className="h-4 w-4" />
@@ -636,28 +644,44 @@ export default function SiteContentPage() {
                         variant="destructive"
                         size="sm"
                         disabled={popupActionKey !== null}
-                        onClick={() => {
-                          if (
-                            typeof window !== "undefined" &&
-                            !window.confirm(
-                              `Excluir definitivamente o popup "${popup.title}"?\n\nEssa acao nao pode ser desfeita.`
-                            )
-                          ) {
-                            return;
-                          }
+                        onClick={() =>
                           void runPopupAction(`remove-${popup.id}`, async () => {
                             await deleteSitePopup(popup.id);
                             await queryClient.invalidateQueries({ queryKey: ["erp", "site-popups"] });
                             toast.success("Popup excluido.");
-                          });
-                        }}
+                          })
+                        }
                       >
                         <Trash2 className="mr-1 h-4 w-4" />
                         {popupActionKey === `remove-${popup.id}` ? "Excluindo..." : "Excluir"}
                       </Button>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
+                {popupTotalPages > 1 && (
+                  <div className="flex items-center justify-between pt-2">
+                    <button
+                      type="button"
+                      className="rounded-md border border-border px-3 py-1 text-xs disabled:opacity-40"
+                      disabled={popupPage <= 1}
+                      onClick={() => setPopupPage((p) => Math.max(1, p - 1))}
+                    >
+                      Anterior
+                    </button>
+                    <span className="text-xs text-muted-foreground">
+                      {popupPage} / {popupTotalPages}
+                    </span>
+                    <button
+                      type="button"
+                      className="rounded-md border border-border px-3 py-1 text-xs disabled:opacity-40"
+                      disabled={popupPage >= popupTotalPages}
+                      onClick={() => setPopupPage((p) => Math.min(popupTotalPages, p + 1))}
+                    >
+                      Proxima
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -725,7 +749,7 @@ export default function SiteContentPage() {
               </div>
             </div>
 
-            <div className="space-y-2 rounded-2xl border p-4">
+            <div className="space-y-2 rounded-2xl border p-4 max-h-[400px] overflow-y-auto">
               {categories.map((category, index) => (
                 <div key={category.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3">
                   <div>
