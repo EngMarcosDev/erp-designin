@@ -37,7 +37,7 @@ import ProfitGauge from "@/components/erp/ProfitGauge";
 const PAGE_SIZE_OPTIONS = [10, 25, 50] as const;
 
 export default function PedidosPage() {
-  const { orders, updateOrderStatus, updateOrderDiscount, currentUser } = useERP();
+  const { orders, updateOrderStatus, updateOrderDiscount, updateOrderShipping, currentUser } = useERP();
   const [pageSize, setPageSize] = useState<number>(10);
   const [page, setPage] = useState<number>(1);
   const [statusFilter, setStatusFilter] = useState<"all" | "pendente" | "pago" | "cancelado">("all");
@@ -52,7 +52,13 @@ export default function PedidosPage() {
   const [discountReason, setDiscountReason] = useState("");
   const [discountSaving, setDiscountSaving] = useState(false);
 
-  // Qualquer usuario ERP autenticado pode editar o desconto
+  // Edicao do frete
+  const [shippingEditing, setShippingEditing] = useState(false);
+  const [shippingDraft, setShippingDraft] = useState("");
+  const [shippingReason, setShippingReason] = useState("");
+  const [shippingSaving, setShippingSaving] = useState(false);
+
+  // Qualquer usuario ERP autenticado pode editar o desconto e frete
   const canEditDiscount = Boolean(currentUser);
 
   const totalOrders = orders.length;
@@ -202,9 +208,42 @@ export default function PedidosPage() {
     }
   };
 
+  const beginEditShipping = () => {
+    if (!selectedOrder || !canEditDiscount) return;
+    setShippingDraft(selectedOrder.shipping ? String(selectedOrder.shipping.toFixed(2)) : "0.00");
+    setShippingReason("");
+    setShippingEditing(true);
+  };
+
+  const cancelEditShipping = () => {
+    setShippingEditing(false);
+    setShippingDraft("");
+    setShippingReason("");
+  };
+
+  const handleSaveShipping = async () => {
+    if (!selectedOrder) return;
+    const parsed = Number(String(shippingDraft).replace(",", "."));
+    if (!Number.isFinite(parsed) || parsed < 0) {
+      toast.error("Informe um valor valido (maior ou igual a 0).");
+      return;
+    }
+    try {
+      setShippingSaving(true);
+      await updateOrderShipping(selectedOrder.id, parsed, shippingReason.trim() || undefined);
+      toast.success(`Frete atualizado para R$ ${parsed.toFixed(2)}.`);
+      cancelEditShipping();
+    } catch (error: any) {
+      toast.error(error?.message || "Erro ao atualizar frete do pedido.");
+    } finally {
+      setShippingSaving(false);
+    }
+  };
+
   // Fecha a edicao automatica se o dialog fechar ou o pedido mudar
   useEffect(() => {
     cancelEditDiscount();
+    cancelEditShipping();
   }, [selectedOrderId]);
 
   return (
@@ -458,16 +497,32 @@ export default function PedidosPage() {
                   <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3">
                     <div>
                       <p className="text-sm font-semibold text-foreground">Resumo financeiro</p>
-                      <p className="text-xs text-muted-foreground">
-                        Desconto do pedido eh exclusivo do administrador principal.
-                      </p>
+                      {selectedOrder.couponCode ? (
+                        <p className="mt-0.5 text-xs text-muted-foreground">
+                          Cupom aplicado:{" "}
+                          <span className="font-semibold text-rasta-green">{selectedOrder.couponCode}</span>
+                          {selectedOrder.couponDiscount && selectedOrder.couponDiscount > 0 ? (
+                            <span className="ml-1 text-rasta-green">
+                              (- {formatPrice(selectedOrder.couponDiscount, { decimals: 2 })})
+                            </span>
+                          ) : null}
+                        </p>
+                      ) : null}
                     </div>
-                    {canEditDiscount && !discountEditing ? (
-                      <Button type="button" variant="outline" size="sm" className="gap-1" onClick={beginEditDiscount}>
-                        <Pencil className="h-3.5 w-3.5" />
-                        Editar desconto
-                      </Button>
-                    ) : null}
+                    <div className="flex gap-2">
+                      {canEditDiscount && !shippingEditing && !discountEditing ? (
+                        <Button type="button" variant="outline" size="sm" className="gap-1" onClick={beginEditShipping}>
+                          <Pencil className="h-3.5 w-3.5" />
+                          Editar frete
+                        </Button>
+                      ) : null}
+                      {canEditDiscount && !discountEditing && !shippingEditing ? (
+                        <Button type="button" variant="outline" size="sm" className="gap-1" onClick={beginEditDiscount}>
+                          <Pencil className="h-3.5 w-3.5" />
+                          Editar desconto
+                        </Button>
+                      ) : null}
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-2 px-4 py-4 sm:grid-cols-4">
@@ -496,6 +551,61 @@ export default function PedidosPage() {
                       </p>
                     </div>
                   </div>
+
+                  {canEditDiscount && shippingEditing ? (
+                    <div className="space-y-3 border-t border-border bg-muted/15 px-4 py-4">
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                        <div className="space-y-1 sm:col-span-1">
+                          <label className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                            Novo frete (R$)
+                          </label>
+                          <Input
+                            type="number"
+                            inputMode="decimal"
+                            min={0}
+                            step="0.01"
+                            placeholder="0,00"
+                            value={shippingDraft}
+                            onChange={(event) => setShippingDraft(event.target.value)}
+                          />
+                        </div>
+                        <div className="space-y-1 sm:col-span-2">
+                          <label className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                            Motivo / observacao (opcional)
+                          </label>
+                          <Input
+                            type="text"
+                            placeholder="Ex: frete gratis para fidelidade"
+                            maxLength={240}
+                            value={shippingReason}
+                            onChange={(event) => setShippingReason(event.target.value)}
+                          />
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap items-center justify-end gap-2">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          className="gap-1"
+                          onClick={cancelEditShipping}
+                          disabled={shippingSaving}
+                        >
+                          <X className="h-4 w-4" /> Cancelar
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          className="gap-1"
+                          onClick={handleSaveShipping}
+                          disabled={shippingSaving}
+                        >
+                          <Check className="h-4 w-4" />
+                          {shippingSaving ? "Salvando..." : "Salvar frete"}
+                        </Button>
+                      </div>
+                    </div>
+                  ) : null}
 
                   {canEditDiscount && discountEditing ? (
                     <div className="space-y-3 border-t border-border bg-muted/15 px-4 py-4">

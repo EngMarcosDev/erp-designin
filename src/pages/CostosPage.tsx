@@ -13,24 +13,31 @@ import { updateProduct } from "@/api/erp";
 export default function CostosPage() {
   const { products, orders, refreshProducts } = useERP();
   const [search, setSearch] = useState("");
+  const [costoPage, setCostoPage] = useState(1);
+  const COSTO_PAGE_SIZE = 10;
   const [savingId, setSavingId] = useState<string | null>(null);
   // Armazena rascunho de custo por produto ID
   const [draftCosts, setDraftCosts] = useState<Record<string, string>>({});
 
-  const activeProducts = useMemo(
-    () =>
-      products
-        .filter((p) => p.category !== "banners" && p.active)
-        .filter((p) => {
-          const q = search.trim().toLowerCase();
-          if (!q) return true;
-          return (
-            p.name.toLowerCase().includes(q) ||
-            (p.category || "").toLowerCase().includes(q)
-          );
-        })
-        .sort((a, b) => a.name.localeCompare(b.name, "pt-BR")),
-    [products, search]
+  const activeProducts = useMemo(() => {
+    setCostoPage(1);
+    return products
+      .filter((p) => p.category !== "banners" && p.active)
+      .filter((p) => {
+        const q = search.trim().toLowerCase();
+        if (!q) return true;
+        return (
+          p.name.toLowerCase().includes(q) ||
+          (p.category || "").toLowerCase().includes(q)
+        );
+      })
+      .sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
+  }, [products, search]);
+
+  const costoTotalPages = Math.max(1, Math.ceil(activeProducts.length / COSTO_PAGE_SIZE));
+  const pagedProducts = useMemo(
+    () => activeProducts.slice((costoPage - 1) * COSTO_PAGE_SIZE, costoPage * COSTO_PAGE_SIZE),
+    [activeProducts, costoPage]
   );
 
   const totalProducts = activeProducts.length;
@@ -136,7 +143,7 @@ export default function CostosPage() {
                 {activeProducts.length === 0 ? (
                   <p className="p-4 text-sm text-muted-foreground">Nenhum produto encontrado.</p>
                 ) : (
-                  activeProducts.map((product) => {
+                  pagedProducts.map((product) => {
                     const currentCost = product.cost ?? 0;
                     const draft = getDraft(product.id, product.cost);
                     const isDirty = draftCosts[product.id] !== undefined && draftCosts[product.id] !== String(currentCost);
@@ -202,6 +209,21 @@ export default function CostosPage() {
                   })
                 )}
               </div>
+              {costoTotalPages > 1 && (
+                <div className="flex items-center justify-between pt-3">
+                  <p className="text-sm text-muted-foreground">
+                    Pág. {costoPage} / {costoTotalPages} · {activeProducts.length} produto(s)
+                  </p>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" disabled={costoPage <= 1} onClick={() => setCostoPage((p) => Math.max(1, p - 1))}>
+                      Anterior
+                    </Button>
+                    <Button variant="outline" size="sm" disabled={costoPage >= costoTotalPages} onClick={() => setCostoPage((p) => Math.min(costoTotalPages, p + 1))}>
+                      Próxima
+                    </Button>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>

@@ -466,7 +466,7 @@ export default function ProdutosPage() {
                 <div className="mt-4 flex gap-2">
                   <Button variant="outline" size="sm" className="flex-1" onClick={() => handleEdit(product.id)}>
                     <Edit className="mr-1 h-4 w-4" />
-                    Editar
+                    {product.category === "banners" ? "Editar Banner" : "Editar Produto"}
                   </Button>
                   <div className="inline-flex items-center gap-2 rounded-md border border-border bg-background px-2">
                     <span className="text-[11px] text-muted-foreground">{product.active ? "Ativo" : "Inativo"}</span>
