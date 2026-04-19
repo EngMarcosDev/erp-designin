@@ -94,22 +94,26 @@ export default function EstoquePage() {
   const [isImporting, setIsImporting] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<"all" | Category>("all");
-  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive" | "low_stock">("all");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [realCounts, setRealCounts] = useState<Record<string, string>>({});
   const [pageSize, setPageSize] = useState<number>(10);
   const [page, setPage] = useState<number>(1);
 
-  const categoryOptions = useMemo(
-    () =>
-      (Object.keys(CATEGORY_LABELS) as Category[])
-        .filter((category) => category !== "banners")
-        .map((category) => ({
-          category,
-          count: products.filter((product) => product.category === category).length,
-        })),
-    [products]
-  );
+  const categoryOptions = useMemo(() => {
+    // Collect unique categories from actual products (excluding banners)
+    const fromProducts = Array.from(
+      new Set(products.filter((p) => p.category && p.category !== "banners").map((p) => p.category))
+    );
+    // Merge with hardcoded labels (in case some have 0 products)
+    const fromLabels = Object.keys(CATEGORY_LABELS).filter((c) => c !== "banners");
+    const merged = Array.from(new Set([...fromLabels, ...fromProducts]));
+    return merged.map((category) => ({
+      category,
+      label: CATEGORY_LABELS[category] || category,
+      count: products.filter((p) => p.category === category).length,
+    }));
+  }, [products]);
 
   const filteredProducts = useMemo(
     () =>
@@ -117,9 +121,15 @@ export default function EstoquePage() {
         .filter((product) => product.category !== "banners")
         .filter((product) => product.name.toLowerCase().includes(searchTerm.toLowerCase()))
         .filter((product) => categoryFilter === "all" || product.category === categoryFilter)
-        .filter((product) => statusFilter === "all" || (statusFilter === "active" ? product.active : !product.active))
+        .filter((product) => {
+          if (statusFilter === "all") return true;
+          if (statusFilter === "active") return product.active;
+          if (statusFilter === "inactive") return !product.active;
+          if (statusFilter === "low_stock") return product.stock < lowStockThreshold;
+          return true;
+        })
         .sort((a, b) => a.name.localeCompare(b.name, "pt-BR")),
-    [products, searchTerm, categoryFilter, statusFilter]
+    [products, searchTerm, categoryFilter, statusFilter, lowStockThreshold]
   );
 
   const activeProducts = products.filter((product) => product.active && product.category !== "banners");
@@ -453,9 +463,9 @@ export default function EstoquePage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todas as categorias</SelectItem>
-                  {categoryOptions.map(({ category, count }) => (
+                  {categoryOptions.map(({ category, label, count }) => (
                     <SelectItem key={category} value={category}>
-                      {CATEGORY_LABELS[category]} ({count})
+                      {label} ({count})
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -472,6 +482,7 @@ export default function EstoquePage() {
                   <SelectItem value="all">Todos</SelectItem>
                   <SelectItem value="active">Ativos</SelectItem>
                   <SelectItem value="inactive">Inativos</SelectItem>
+                  <SelectItem value="low_stock">Estoque baixo (&lt;{lowStockThreshold})</SelectItem>
                 </SelectContent>
               </Select>
             </div>
