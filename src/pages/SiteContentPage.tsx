@@ -196,7 +196,7 @@ export default function SiteContentPage() {
       };
 
       if (!payload.title || !payload.message) {
-        throw new Error("Titulo e mensagem sao obrigatorios.");
+        throw new Error("Título e mensagem são obrigatórios.");
       }
       if (payload.startsAt && payload.endsAt && new Date(payload.endsAt) <= new Date(payload.startsAt)) {
         throw new Error("Fim deve ser maior que inicio.");
@@ -223,7 +223,7 @@ export default function SiteContentPage() {
         image: categoryForm.image.trim() || null,
         isActive: categoryForm.isActive,
       };
-      if (!payload.name) throw new Error("Nome da categoria e obrigatorio.");
+      if (!payload.name) throw new Error("Nome da categoria é obrigatório.");
       if (editingCategoryId) return updateCategory(editingCategoryId, payload);
       return createCategory(payload);
     },
@@ -321,7 +321,7 @@ export default function SiteContentPage() {
   return (
     <div className="space-y-6 animate-fade-in">
       <div>
-        <h1 className="text-3xl font-bold">Conteudo do Site</h1>
+        <h1 className="text-3xl font-bold">Conteúdo do Site</h1>
         <p className="text-muted-foreground">Gerencie banners, popups e categorias.</p>
       </div>
 

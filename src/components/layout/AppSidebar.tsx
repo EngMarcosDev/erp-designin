@@ -11,7 +11,6 @@
   LogOut,
   Megaphone,
   DollarSign,
-  Tag,
 } from "lucide-react";
 import type { ComponentType } from "react";
 import { useNavigate } from "react-router-dom";
@@ -39,19 +38,15 @@ type MenuItem = {
   permission: Permission;
 };
 
-const mainMenuItems: MenuItem[] = [
+const menuItems: MenuItem[] = [
   { title: "Pedidos", url: "/pedidos", icon: ShoppingCart, permission: "gerenciar_pedidos" },
   { title: "Produtos", url: "/produtos", icon: Package, permission: "gerenciar_produtos" },
-  { title: "Conteúdo", url: "/conteudo", icon: Megaphone, permission: "gerenciar_produtos" },
-  { title: "Cupons", url: "/cupons", icon: Tag, permission: "gerenciar_site" },
-  { title: "Custos", url: "/custos", icon: DollarSign, permission: "ver_relatorios" },
-  { title: "Relatórios", url: "/relatorios", icon: FileText, permission: "ver_relatorios" },
+  { title: "Conteudo", url: "/conteudo", icon: Megaphone, permission: "gerenciar_produtos" },
+  { title: "Usuarios", url: "/usuarios", icon: Users, permission: "gerenciar_usuarios" },
   { title: "Estoque", url: "/estoque", icon: BarChart3, permission: "gerenciar_estoque" },
-];
-
-const adminMenuItems: MenuItem[] = [
-  { title: "Usuários", url: "/usuarios", icon: Users, permission: "gerenciar_usuarios" },
-  { title: "Configurações", url: "/configuracoes", icon: Settings, permission: "gerenciar_usuarios" },
+  { title: "Custos", url: "/custos", icon: DollarSign, permission: "ver_relatorios" },
+  { title: "Relatorios", url: "/relatorios", icon: FileText, permission: "ver_relatorios" },
+  { title: "Configuracoes", url: "/configuracoes", icon: Settings, permission: "gerenciar_usuarios" },
 ];
 
 export function AppSidebar() {
@@ -61,8 +56,7 @@ export function AppSidebar() {
   const navigate = useNavigate();
   const headshopUrl = import.meta.env.VITE_HEADSHOP_URL || "https://bacaxita.com.br";
 
-  const visibleMainItems = user?.active ? mainMenuItems.filter((item) => hasPermission(item.permission)) : [];
-  const visibleAdminItems = user?.active ? adminMenuItems.filter((item) => hasPermission(item.permission)) : [];
+  const visibleMenuItems = user?.active ? menuItems.filter((item) => hasPermission(item.permission)) : [];
 
   const handleLogout = () => {
     logout();
@@ -81,9 +75,9 @@ export function AppSidebar() {
         {!isCollapsed && (
           <div className="flex items-center gap-2">
             <div className="flex h-10 w-10 items-center justify-center rounded-full border border-[hsl(28_40%_36%)]/35 bg-[hsl(28_40%_36%)]/15 shadow-sm">
-              <img src="/assets/branding/logo-erp.png" alt="Abacaxita ERP" className="h-8 w-8 rounded-full object-cover ring-1 ring-white/60" />
+              <img src="/assets/branding/logo-erp.png" alt="ERP Bacaxita" className="h-8 w-8 rounded-full object-cover ring-1 ring-white/60" />
             </div>
-            <span className="font-bold text-sidebar-foreground">Abacaxita ERP</span>
+            <span className="font-bold text-sidebar-foreground">ERP Bacaxita</span>
           </div>
         )}
         <SidebarTrigger className="text-sidebar-foreground hover:bg-sidebar-accent rounded-md p-2">
@@ -95,7 +89,7 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              {visibleMainItems.map((item) => (
+              {visibleMenuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <NavLink
@@ -109,30 +103,9 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
-
-              {visibleAdminItems.length > 0 && (
-                <>
-                  <div className={`my-1.5 border-t border-sidebar-border/50 ${isCollapsed ? "mx-2" : "mx-3"}`} />
-                  {visibleAdminItems.map((item) => (
-                    <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton asChild>
-                        <NavLink
-                          to={item.url}
-                          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
-                          activeClassName="bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary"
-                        >
-                          <item.icon className="h-5 w-5 shrink-0" />
-                          {!isCollapsed && <span className="font-medium">{item.title}</span>}
-                        </NavLink>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                </>
-              )}
-
-              {visibleMainItems.length === 0 && visibleAdminItems.length === 0 && !isCollapsed && (
+              {visibleMenuItems.length === 0 && !isCollapsed && (
                 <div className="px-3 py-3 text-xs text-sidebar-foreground/70">
-                  Este usuário não possui permissões de menu ativas.
+                  Este usuario nao possui permissoes de menu ativas.
                 </div>
               )}
             </SidebarMenu>

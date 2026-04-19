@@ -61,7 +61,11 @@ export default function UsuariosPage() {
   const [auditDateFrom, setAuditDateFrom] = useState("");
   const [auditDateTo, setAuditDateTo] = useState("");
   const [auditPage, setAuditPage] = useState(1);
-  const AUDIT_PAGE_SIZE = 20;
+  const AUDIT_PAGE_SIZE = 5;
+  const [usersPage, setUsersPage] = useState(1);
+  const USERS_PAGE_SIZE = 5;
+  const [permissionsPage, setPermissionsPage] = useState(1);
+  const PERMS_PAGE_SIZE = 5;
   const [statusFilter, setStatusFilter] = useState<"active" | "inactive" | "all">("active");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
@@ -90,25 +94,35 @@ export default function UsuariosPage() {
     staleTime: 60_000,
   });
 
-  const filteredUsers = useMemo(
-    () =>
-      users
-        .filter(
-          (user) =>
-            (user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-              user.email.toLowerCase().includes(searchTerm.toLowerCase())) &&
-            (statusFilter === "all" || (statusFilter === "active" ? user.active : !user.active))
-        )
-        .sort((a, b) => a.name.localeCompare(b.name, "pt-BR")),
-    [users, searchTerm, statusFilter]
+  const filteredUsers = useMemo(() => {
+    setUsersPage(1);
+    return users
+      .filter(
+        (user) =>
+          (user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            user.email.toLowerCase().includes(searchTerm.toLowerCase())) &&
+          (statusFilter === "all" || (statusFilter === "active" ? user.active : !user.active))
+      )
+      .sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
+  }, [users, searchTerm, statusFilter]);
+
+  const usersTotalPages = Math.max(1, Math.ceil(filteredUsers.length / USERS_PAGE_SIZE));
+  const pagedUsers = useMemo(
+    () => filteredUsers.slice((usersPage - 1) * USERS_PAGE_SIZE, usersPage * USERS_PAGE_SIZE),
+    [filteredUsers, usersPage]
   );
 
-  const permissionUsers = useMemo(
-    () =>
-      users
-        .filter((user) => statusFilter === "all" || (statusFilter === "active" ? user.active : !user.active))
-        .sort((a, b) => a.name.localeCompare(b.name, "pt-BR")),
-    [users, statusFilter]
+  const permissionUsers = useMemo(() => {
+    setPermissionsPage(1);
+    return users
+      .filter((user) => statusFilter === "all" || (statusFilter === "active" ? user.active : !user.active))
+      .sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
+  }, [users, statusFilter]);
+
+  const permsTotalPages = Math.max(1, Math.ceil(permissionUsers.length / PERMS_PAGE_SIZE));
+  const pagedPermissionUsers = useMemo(
+    () => permissionUsers.slice((permissionsPage - 1) * PERMS_PAGE_SIZE, permissionsPage * PERMS_PAGE_SIZE),
+    [permissionUsers, permissionsPage]
   );
 
   const auditEntities = useMemo(() => {
@@ -290,12 +304,12 @@ export default function UsuariosPage() {
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Usuarios</h1>
-          <p className="text-muted-foreground">Gerencie contas, permissoes e historico administrativo do ERP.</p>
+          <h1 className="text-3xl font-bold text-foreground">Usuários</h1>
+          <p className="text-muted-foreground">Gerencie contas, permissões e histórico administrativo do ERP.</p>
         </div>
         <Button onClick={() => setIsModalOpen(true)} className="gap-2">
           <Plus className="h-4 w-4" />
-          Novo Usuario
+          Novo Usuário
         </Button>
       </div>
 
@@ -405,7 +419,7 @@ export default function UsuariosPage() {
             <Card>
               <CardContent className="py-12 text-center">
                 <UsersIcon className="mx-auto mb-4 h-12 w-12 text-muted-foreground/50" />
-                <h3 className="text-lg font-medium text-muted-foreground">Nenhum usuario encontrado</h3>
+                <h3 className="text-lg font-medium text-muted-foreground">Nenhum usuário encontrado</h3>
                 <p className="text-sm text-muted-foreground/70">
                   {searchTerm ? "Tente ajustar sua busca." : "Comece adicionando seu primeiro usuario."}
                 </p>
@@ -422,7 +436,7 @@ export default function UsuariosPage() {
                         onCheckedChange={(checked) => handleSelectAll(Boolean(checked))}
                       />
                     </TableHead>
-                    <TableHead>Usuario</TableHead>
+                    <TableHead>Usuário</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Papel</TableHead>
                     <TableHead>Acesso</TableHead>
@@ -431,7 +445,7 @@ export default function UsuariosPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredUsers.map((user) => (
+                  {pagedUsers.map((user) => (
                     <TableRow key={user.id} className={cn(!user.active && "opacity-60", compactTables && "h-11")}>
                       <TableCell>
                         <Checkbox
@@ -497,6 +511,21 @@ export default function UsuariosPage() {
               </Table>
             </Card>
           )}
+          {usersTotalPages > 1 && (
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">
+                Pág. {usersPage} / {usersTotalPages} · {filteredUsers.length} usuario(s)
+              </p>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" disabled={usersPage <= 1} onClick={() => setUsersPage((p) => Math.max(1, p - 1))}>
+                  Anterior
+                </Button>
+                <Button variant="outline" size="sm" disabled={usersPage >= usersTotalPages} onClick={() => setUsersPage((p) => Math.min(usersTotalPages, p + 1))}>
+                  Próxima
+                </Button>
+              </div>
+            </div>
+          )}
         </TabsContent>
 
         {/* PERMISSOES */}
@@ -510,14 +539,14 @@ export default function UsuariosPage() {
                 <Table>
                   <TableHeader>
                     <TableRow className={cn(compactTables && "h-9")}>
-                      <TableHead>Usuario</TableHead>
+                      <TableHead>Usuário</TableHead>
                       <TableHead>Papel</TableHead>
                       <TableHead>Permissoes</TableHead>
                       <TableHead className="text-right">Acoes</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {permissionUsers.map((user) => (
+                    {pagedPermissionUsers.map((user) => (
                       <TableRow key={user.id} className={cn(compactTables && "h-11")}>
                         <TableCell>
                           <div className="flex items-center gap-3">
@@ -582,6 +611,21 @@ export default function UsuariosPage() {
                 </Table>
               </CardContent>
             </Card>
+            {permsTotalPages > 1 && (
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-muted-foreground">
+                  Pág. {permissionsPage} / {permsTotalPages} · {permissionUsers.length} usuario(s)
+                </p>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" disabled={permissionsPage <= 1} onClick={() => setPermissionsPage((p) => Math.max(1, p - 1))}>
+                    Anterior
+                  </Button>
+                  <Button variant="outline" size="sm" disabled={permissionsPage >= permsTotalPages} onClick={() => setPermissionsPage((p) => Math.min(permsTotalPages, p + 1))}>
+                    Próxima
+                  </Button>
+                </div>
+              </div>
+            )}
           </TabsContent>
         ) : null}
 
@@ -755,13 +799,13 @@ export default function UsuariosPage() {
                 </div>
               ))}
               {permissionsModal.role === "CLIENTE" ? (
-                <p className="text-xs text-muted-foreground">Clientes do HeadShop nao possuem permissoes de ERP.</p>
+                <p className="text-xs text-muted-foreground">Clientes do HeadShop não possuem permissões de ERP.</p>
               ) : null}
             </div>
 
             <div className="flex items-center justify-between border-t border-border pt-3">
               <div className="space-y-0.5">
-                <Label>Usuario tem acesso ao sistema?</Label>
+                <Label>Usuário tem acesso ao sistema?</Label>
                 <p className="text-xs text-muted-foreground">Quando desligado, o login no ERP e bloqueado.</p>
               </div>
               <Switch
