@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Tag, Edit, Trash2, ToggleLeft, ToggleRight, Percent, DollarSign } from "lucide-react";
+import { Plus, Tag, Edit, Trash2, ToggleLeft, ToggleRight, Percent, DollarSign, Search, X } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -50,6 +50,8 @@ const emptyForm = (): Omit<ErpCoupon, "id" | "usedCount" | "createdAt"> => ({
   expiresAt: null,
 });
 
+type StatusFilter = "all" | "active" | "inactive" | "expired" | "full";
+
 export default function CuponsPage() {
   const queryClient = useQueryClient();
   const [modalOpen, setModalOpen] = useState(false);
@@ -57,6 +59,8 @@ export default function CuponsPage() {
   const [form, setForm] = useState(emptyForm());
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 10;
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
 
   const { data: coupons = [], isLoading } = useQuery({
     queryKey: ["erp", "coupons"],
@@ -130,8 +134,20 @@ export default function CuponsPage() {
     setForm(emptyForm());
   };
 
-  const totalPages = Math.max(1, Math.ceil(coupons.length / PAGE_SIZE));
-  const pagedCoupons = coupons.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const now = new Date();
+  const filteredCoupons = useMemo(() => {
+    return coupons.filter((c) => {
+      if (search.trim() && !c.code.toLowerCase().includes(search.trim().toLowerCase())) return false;
+      if (statusFilter === "active") return c.isActive;
+      if (statusFilter === "inactive") return !c.isActive;
+      if (statusFilter === "expired") return c.expiresAt ? new Date(c.expiresAt) < now : false;
+      if (statusFilter === "full") return c.maxUses != null && c.usedCount >= c.maxUses;
+      return true;
+    });
+  }, [coupons, search, statusFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredCoupons.length / PAGE_SIZE));
+  const pagedCoupons = filteredCoupons.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const activeCoupons = coupons.filter((c) => c.isActive).length;
   const totalUses = coupons.reduce((sum, c) => sum + c.usedCount, 0);
@@ -189,14 +205,49 @@ export default function CuponsPage() {
         <CardHeader>
           <CardTitle>Lista de Cupons</CardTitle>
           <CardDescription>Clique em Editar para alterar ou no toggle para ativar/desativar.</CardDescription>
+          <div className="flex flex-col gap-2 pt-2 sm:flex-row sm:items-center">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Buscar por código..."
+                className="pl-9 uppercase"
+                value={search}
+                onChange={(e) => { setSearch(e.target.value.toUpperCase()); setPage(1); }}
+              />
+              {search && (
+                <button
+                  type="button"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  onClick={() => { setSearch(""); setPage(1); }}
+                  aria-label="Limpar busca"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+            <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v as StatusFilter); setPage(1); }}>
+              <SelectTrigger className="w-full sm:w-48">
+                <SelectValue placeholder="Todos os status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="active">Ativos</SelectItem>
+                <SelectItem value="inactive">Inativos</SelectItem>
+                <SelectItem value="expired">Vencidos</SelectItem>
+                <SelectItem value="full">Esgotados</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </CardHeader>
         <CardContent className="p-0">
           {isLoading ? (
             <p className="p-6 text-sm text-muted-foreground">Carregando cupons...</p>
-          ) : coupons.length === 0 ? (
+          ) : filteredCoupons.length === 0 ? (
             <div className="p-12 text-center">
               <Tag className="mx-auto mb-4 h-10 w-10 text-muted-foreground/50" />
-              <p className="text-muted-foreground">Nenhum cupom cadastrado. Crie o primeiro!</p>
+              <p className="text-muted-foreground">
+                {coupons.length === 0 ? "Nenhum cupom cadastrado. Crie o primeiro!" : "Nenhum cupom encontrado com os filtros aplicados."}
+              </p>
             </div>
           ) : (
             <>
@@ -287,7 +338,7 @@ export default function CuponsPage() {
               </Table>
               {totalPages > 1 && (
                 <div className="flex items-center justify-between px-4 py-3 border-t">
-                  <p className="text-sm text-muted-foreground">Pág. {page} / {totalPages}</p>
+                  <p className="text-sm text-muted-foreground">Pág. {page} / {totalPages} · {filteredCoupons.length} cupom(ns)</p>
                   <div className="flex gap-2">
                     <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>Anterior</Button>
                     <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>Próxima</Button>

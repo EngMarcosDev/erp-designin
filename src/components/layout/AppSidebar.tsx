@@ -11,7 +11,6 @@
   LogOut,
   Megaphone,
   DollarSign,
-  Tag,
 } from "lucide-react";
 import type { ComponentType } from "react";
 import { useNavigate } from "react-router-dom";
@@ -47,7 +46,6 @@ const menuItems: MenuItem[] = [
   { title: "Estoque", url: "/estoque", icon: BarChart3, permission: "gerenciar_estoque" },
   { title: "Custos", url: "/custos", icon: DollarSign, permission: "ver_relatorios" },
   { title: "Relatorios", url: "/relatorios", icon: FileText, permission: "ver_relatorios" },
-  { title: "Cupons", url: "/cupons", icon: Tag, permission: "gerenciar_site" },
   { title: "Configuracoes", url: "/configuracoes", icon: Settings, permission: "gerenciar_usuarios" },
 ];
 
