@@ -23,6 +23,7 @@ import {
   fetchOrders as apiFetchOrders,
   updateOrderStatus as apiUpdateOrderStatus,
   updateOrderDiscount as apiUpdateOrderDiscount,
+  updateOrderShipping as apiUpdateOrderShipping,
   fetchStockComparison as apiFetchStockComparison,
   syncStockPull,
   syncStockPush,
@@ -52,6 +53,7 @@ interface ERPContextType {
   orders: Order[];
   updateOrderStatus: (id: string, status: Order["status"]) => AsyncVoid;
   updateOrderDiscount: (id: string, discount: number, reason?: string) => AsyncVoid;
+  updateOrderShipping: (id: string, shipping: number, reason?: string) => AsyncVoid;
 
   // Stock
   stockComparison: StockComparison[];
@@ -140,6 +142,12 @@ export function ERPProvider({ children }: { children: ReactNode }) {
   const updateOrderDiscountMut = useMutation({
     mutationFn: ({ id, discount, reason }: { id: number; discount: number; reason?: string }) =>
       apiUpdateOrderDiscount(id, discount, reason),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["erp", "orders"] }),
+  });
+
+  const updateOrderShippingMut = useMutation({
+    mutationFn: ({ id, shipping, reason }: { id: number; shipping: number; reason?: string }) =>
+      apiUpdateOrderShipping(id, shipping, reason),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["erp", "orders"] }),
   });
 
@@ -270,6 +278,8 @@ export function ERPProvider({ children }: { children: ReactNode }) {
       shipping: Number((o as any).shipping || 0),
       tax: Number((o as any).tax || 0),
       discount: Number((o as any).discount || 0),
+      couponCode: (o as any).couponCode || null,
+      couponDiscount: Number((o as any).couponDiscount || 0),
       total: Number(o.total || 0),
       status: (o.status || "pendente") as Order["status"],
       paymentStatus: (o as any).paymentStatus,
@@ -441,6 +451,14 @@ export function ERPProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  const updateOrderShipping: ERPContextType["updateOrderShipping"] = async (id, shipping, reason) => {
+    await updateOrderShippingMut.mutateAsync({
+      id: Number(id),
+      shipping,
+      reason,
+    });
+  };
+
   const refreshStockComparison: ERPContextType["refreshStockComparison"] = async () => {
     await queryClient.invalidateQueries({ queryKey: ["erp", "stock-compare"] });
   };
@@ -474,6 +492,7 @@ export function ERPProvider({ children }: { children: ReactNode }) {
         orders: mappedOrders,
         updateOrderStatus,
         updateOrderDiscount,
+        updateOrderShipping,
         stockComparison: mappedStock,
         refreshStockComparison,
         syncToHeadshop,

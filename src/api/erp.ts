@@ -259,6 +259,17 @@ export const updateOrderDiscount = async (
   });
 };
 
+export const updateOrderShipping = async (
+  id: number,
+  shipping: number,
+  reason?: string
+): Promise<ErpOrder> => {
+  return request(`/orders/${id}/shipping`, {
+    method: "PATCH",
+    body: JSON.stringify({ shipping, reason }),
+  });
+};
+
 export const fetchStockReport = async (): Promise<StockReportItem[]> => {
   return request("/reports/stock");
 };
