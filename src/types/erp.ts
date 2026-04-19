@@ -98,8 +98,6 @@ export interface Order {
   shipping: number;
   tax: number;
   discount: number;
-  couponCode?: string | null;
-  couponDiscount?: number;
   total: number;
   status: OrderStatus;
   paymentStatus?: string;

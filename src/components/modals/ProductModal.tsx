@@ -229,7 +229,6 @@ export function ProductModal({ open, onClose, productId, initialMode = "product"
   const [isLoading, setIsLoading] = useState(false);
   const productInputRef = useRef<HTMLInputElement>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
-  const bannerMobileInputRef = useRef<HTMLInputElement>(null);
   const previewRef = useRef<HTMLDivElement>(null);
   const previewCanvasRef = useRef<HTMLCanvasElement>(null);
   const dragStartRef = useRef<{ x: number; y: number; offsetX: number; offsetY: number } | null>(null);
@@ -240,7 +239,7 @@ export function ProductModal({ open, onClose, productId, initialMode = "product"
   const [bannerUrlInput, setBannerUrlInput] = useState("");
   const [editorOpen, setEditorOpen] = useState(false);
   const [editorSource, setEditorSource] = useState("");
-  const [editorTarget, setEditorTarget] = useState<number | "banner" | "banner-mobile" | null>(null);
+  const [editorTarget, setEditorTarget] = useState<number | "banner" | null>(null);
   const [editorZoom, setEditorZoom] = useState(1);
   const [editorOffsetX, setEditorOffsetX] = useState(0);
   const [editorOffsetY, setEditorOffsetY] = useState(0);
@@ -379,7 +378,7 @@ export function ProductModal({ open, onClose, productId, initialMode = "product"
     setEditorRotation(0);
     setEditorFlipX(false);
     setEditorFlipY(false);
-    setEditorAspectMode(target === "banner" ? "banner" : target === "banner-mobile" ? "square" : "free");
+    setEditorAspectMode(target === "banner" ? "banner" : "free");
     setEditorCropWidthRatio(1);
     setEditorCropHeightRatio(1);
     setEditorGridEnabled(true);
@@ -504,23 +503,6 @@ export function ProductModal({ open, onClose, productId, initialMode = "product"
       toast.success("Banner carregado.");
     } catch (error: any) {
       toast.error(error?.message || "Falha ao carregar banner");
-    }
-  };
-
-  const handleBannerMobileFile = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    event.target.value = "";
-    if (!file) return;
-    if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
-      toast.error("Formato invalido. Use JPG, PNG ou WEBP.");
-      return;
-    }
-    try {
-      const dataUrl = await readFileAsOptimizedDataUrl(file, { maxSide: PRODUCT_IMAGE_MAX_SIDE, quality: 0.94 });
-      setFormData((previous) => ({ ...previous, image: dataUrl }));
-      toast.success("Imagem mobile carregada.");
-    } catch (error: any) {
-      toast.error(error?.message || "Falha ao carregar imagem mobile");
     }
   };
 
@@ -653,8 +635,6 @@ export function ProductModal({ open, onClose, productId, initialMode = "product"
 
       if (editorTarget === "banner") {
         setFormData((previous) => ({ ...previous, banner: adjustedImage }));
-      } else if (editorTarget === "banner-mobile") {
-        setFormData((previous) => ({ ...previous, image: adjustedImage }));
       } else {
         setFormData((previous) => {
           const nextGallery = [...previous.gallery];
@@ -752,7 +732,7 @@ export function ProductModal({ open, onClose, productId, initialMode = "product"
       <Dialog open={open} onOpenChange={onClose}>
         <DialogContent className="max-h-[94vh] p-0 sm:max-w-4xl xl:max-w-5xl">
           <DialogHeader className="dialog-titlebar shrink-0 px-6 pt-6 pb-4 rounded-t-lg">
-            <DialogTitle>{isEditing ? (isBannerMode ? "Editar Banner" : "Editar Produto") : isBannerIntent ? "Novo Banner" : "Novo Produto"}</DialogTitle>
+            <DialogTitle>{isEditing ? "Editar Produto" : isBannerIntent ? "Novo Banner" : "Novo Produto"}</DialogTitle>
           </DialogHeader>
 
           <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
@@ -998,34 +978,11 @@ export function ProductModal({ open, onClose, productId, initialMode = "product"
             {isBannerMode ? (
               <div className="space-y-2">
                 <Label>Banner Mobile (quadrado ou retrato)</Label>
-                <div className="flex flex-wrap gap-2">
-                  <input
-                    ref={bannerMobileInputRef}
-                    type="file"
-                    accept=".jpg,.jpeg,.png,.webp"
-                    className="hidden"
-                    onChange={handleBannerMobileFile}
-                  />
-                  <Button type="button" variant="outline" className="gap-2" onClick={() => bannerMobileInputRef.current?.click()}>
-                    <Upload className="h-4 w-4" />
-                    Upload Mobile
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="gap-2"
-                    disabled={!formData.image}
-                    onClick={() => openEditor("banner-mobile", formData.image)}
-                  >
-                    <Crop className="h-4 w-4" />
-                    Ajustar
-                  </Button>
-                </div>
                 <div className="flex gap-2">
                   <div className="relative flex-1">
                     <ImageIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
-                      value={formData.image.startsWith("data:") ? "" : formData.image}
+                      value={formData.image}
                       onChange={(e) => setFormData((p) => ({ ...p, image: e.target.value }))}
                       placeholder="https://exemplo.com/banner-mobile.jpg"
                       className="pl-10"

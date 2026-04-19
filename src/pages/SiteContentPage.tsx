@@ -773,20 +773,6 @@ export default function SiteContentPage() {
                     >
                       {category.isActive ? "Desativar" : "Ativar"}
                     </Button>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() =>
-                        setCategoryDeleteState({
-                          open: true,
-                          categoryId: category.id,
-                          categoryName: category.name,
-                        })
-                      }
-                    >
-                      <Trash2 className="mr-1 h-4 w-4" />
-                      Excluir
-                    </Button>
                   </div>
                 </div>
               ))}

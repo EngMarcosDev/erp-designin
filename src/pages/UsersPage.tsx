@@ -61,11 +61,7 @@ export default function UsuariosPage() {
   const [auditDateFrom, setAuditDateFrom] = useState("");
   const [auditDateTo, setAuditDateTo] = useState("");
   const [auditPage, setAuditPage] = useState(1);
-  const AUDIT_PAGE_SIZE = 5;
-  const [usersPage, setUsersPage] = useState(1);
-  const USERS_PAGE_SIZE = 5;
-  const [permissionsPage, setPermissionsPage] = useState(1);
-  const PERMS_PAGE_SIZE = 5;
+  const AUDIT_PAGE_SIZE = 20;
   const [statusFilter, setStatusFilter] = useState<"active" | "inactive" | "all">("active");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
@@ -94,35 +90,25 @@ export default function UsuariosPage() {
     staleTime: 60_000,
   });
 
-  const filteredUsers = useMemo(() => {
-    setUsersPage(1);
-    return users
-      .filter(
-        (user) =>
-          (user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            user.email.toLowerCase().includes(searchTerm.toLowerCase())) &&
-          (statusFilter === "all" || (statusFilter === "active" ? user.active : !user.active))
-      )
-      .sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
-  }, [users, searchTerm, statusFilter]);
-
-  const usersTotalPages = Math.max(1, Math.ceil(filteredUsers.length / USERS_PAGE_SIZE));
-  const pagedUsers = useMemo(
-    () => filteredUsers.slice((usersPage - 1) * USERS_PAGE_SIZE, usersPage * USERS_PAGE_SIZE),
-    [filteredUsers, usersPage]
+  const filteredUsers = useMemo(
+    () =>
+      users
+        .filter(
+          (user) =>
+            (user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+              user.email.toLowerCase().includes(searchTerm.toLowerCase())) &&
+            (statusFilter === "all" || (statusFilter === "active" ? user.active : !user.active))
+        )
+        .sort((a, b) => a.name.localeCompare(b.name, "pt-BR")),
+    [users, searchTerm, statusFilter]
   );
 
-  const permissionUsers = useMemo(() => {
-    setPermissionsPage(1);
-    return users
-      .filter((user) => statusFilter === "all" || (statusFilter === "active" ? user.active : !user.active))
-      .sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
-  }, [users, statusFilter]);
-
-  const permsTotalPages = Math.max(1, Math.ceil(permissionUsers.length / PERMS_PAGE_SIZE));
-  const pagedPermissionUsers = useMemo(
-    () => permissionUsers.slice((permissionsPage - 1) * PERMS_PAGE_SIZE, permissionsPage * PERMS_PAGE_SIZE),
-    [permissionUsers, permissionsPage]
+  const permissionUsers = useMemo(
+    () =>
+      users
+        .filter((user) => statusFilter === "all" || (statusFilter === "active" ? user.active : !user.active))
+        .sort((a, b) => a.name.localeCompare(b.name, "pt-BR")),
+    [users, statusFilter]
   );
 
   const auditEntities = useMemo(() => {
@@ -445,7 +431,7 @@ export default function UsuariosPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {pagedUsers.map((user) => (
+                  {filteredUsers.map((user) => (
                     <TableRow key={user.id} className={cn(!user.active && "opacity-60", compactTables && "h-11")}>
                       <TableCell>
                         <Checkbox
@@ -511,21 +497,6 @@ export default function UsuariosPage() {
               </Table>
             </Card>
           )}
-          {usersTotalPages > 1 && (
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">
-                Pág. {usersPage} / {usersTotalPages} · {filteredUsers.length} usuario(s)
-              </p>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" disabled={usersPage <= 1} onClick={() => setUsersPage((p) => Math.max(1, p - 1))}>
-                  Anterior
-                </Button>
-                <Button variant="outline" size="sm" disabled={usersPage >= usersTotalPages} onClick={() => setUsersPage((p) => Math.min(usersTotalPages, p + 1))}>
-                  Próxima
-                </Button>
-              </div>
-            </div>
-          )}
         </TabsContent>
 
         {/* PERMISSOES */}
@@ -546,7 +517,7 @@ export default function UsuariosPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {pagedPermissionUsers.map((user) => (
+                    {permissionUsers.map((user) => (
                       <TableRow key={user.id} className={cn(compactTables && "h-11")}>
                         <TableCell>
                           <div className="flex items-center gap-3">
@@ -611,21 +582,6 @@ export default function UsuariosPage() {
                 </Table>
               </CardContent>
             </Card>
-            {permsTotalPages > 1 && (
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-muted-foreground">
-                  Pág. {permissionsPage} / {permsTotalPages} · {permissionUsers.length} usuario(s)
-                </p>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" disabled={permissionsPage <= 1} onClick={() => setPermissionsPage((p) => Math.max(1, p - 1))}>
-                    Anterior
-                  </Button>
-                  <Button variant="outline" size="sm" disabled={permissionsPage >= permsTotalPages} onClick={() => setPermissionsPage((p) => Math.min(permsTotalPages, p + 1))}>
-                    Próxima
-                  </Button>
-                </div>
-              </div>
-            )}
           </TabsContent>
         ) : null}
 
