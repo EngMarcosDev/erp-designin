@@ -218,7 +218,7 @@ const ErpDashboard = () => {
         <div id="relatorios" className="bg-white border border-[#e2d6c0] rounded-xl p-4">
           <h2 className="text-lg font-bold mb-3">Relatorios</h2>
           <p className="text-sm text-muted-foreground">
-            Relatório de estoque e pedidos pronto para evoluir.
+            Relatorio de estoque e pedidos pronto para evoluir.
           </p>
         </div>
       </section>

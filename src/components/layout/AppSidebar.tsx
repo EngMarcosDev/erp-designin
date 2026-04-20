@@ -12,6 +12,7 @@
   Megaphone,
   DollarSign,
   Tag,
+  LineChart,
 } from "lucide-react";
 import type { ComponentType } from "react";
 import { useNavigate } from "react-router-dom";
@@ -51,6 +52,7 @@ const mainMenuItems: MenuItem[] = [
 
 const adminMenuItems: MenuItem[] = [
   { title: "Usuários", url: "/usuarios", icon: Users, permission: "gerenciar_usuarios" },
+  { title: "Estatísticas", url: "/estatisticas", icon: LineChart, permission: "gerenciar_usuarios" },
   { title: "Configurações", url: "/configuracoes", icon: Settings, permission: "gerenciar_usuarios" },
 ];
 

@@ -18,6 +18,7 @@ const SettingsPage = lazy(() => import("@/pages/SettingsPage"));
 const SiteContentPage = lazy(() => import("@/pages/SiteContentPage"));
 const CostosPage = lazy(() => import("@/pages/CostosPage"));
 const CuponsPage = lazy(() => import("@/pages/CuponsPage"));
+const StatisticsPage = lazy(() => import("@/pages/StatisticsPage"));
 
 const routeOrder: Array<{ path: string; permission: Permission }> = [
   { path: "/pedidos", permission: "gerenciar_pedidos" },
@@ -177,6 +178,17 @@ const App = () => (
                   <PrivateRoute requiredPermission="gerenciar_site">
                     <MainLayout>
                       <CuponsPage />
+                    </MainLayout>
+                  </PrivateRoute>
+                }
+              />
+
+              <Route
+                path="/estatisticas"
+                element={
+                  <PrivateRoute requiredPermission="gerenciar_usuarios">
+                    <MainLayout>
+                      <StatisticsPage />
                     </MainLayout>
                   </PrivateRoute>
                 }

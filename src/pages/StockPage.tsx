@@ -94,7 +94,7 @@ export default function EstoquePage() {
   const [isImporting, setIsImporting] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<"all" | Category>("all");
-  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive" | "low_stock">("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive" | "low_stock" | "zero_stock">("all");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [realCounts, setRealCounts] = useState<Record<string, string>>({});
   const [pageSize, setPageSize] = useState<number>(10);
@@ -125,7 +125,8 @@ export default function EstoquePage() {
           if (statusFilter === "all") return true;
           if (statusFilter === "active") return product.active;
           if (statusFilter === "inactive") return !product.active;
-          if (statusFilter === "low_stock") return product.stock < lowStockThreshold;
+          if (statusFilter === "low_stock") return product.stock < lowStockThreshold && product.stock > 0;
+          if (statusFilter === "zero_stock") return product.stock <= 0;
           return true;
         })
         .sort((a, b) => a.name.localeCompare(b.name, "pt-BR")),
@@ -483,6 +484,7 @@ export default function EstoquePage() {
                   <SelectItem value="active">Ativos</SelectItem>
                   <SelectItem value="inactive">Inativos</SelectItem>
                   <SelectItem value="low_stock">Estoque baixo (&lt;{lowStockThreshold})</SelectItem>
+                  <SelectItem value="zero_stock">Estoque zerado</SelectItem>
                 </SelectContent>
               </Select>
             </div>

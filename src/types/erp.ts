@@ -130,6 +130,8 @@ export const CATEGORY_LABELS: Record<string, string> = {
   cuia: "Cuias",
   bacakits: "AbacaKits",
   acessorios: "Acessorios",
+  tesoura: "Tesouras",
+  tesouras: "Tesouras",
   banners: "Banners",
 };
 
