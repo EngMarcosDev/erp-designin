@@ -11,7 +11,6 @@
   LogOut,
   Megaphone,
   DollarSign,
-  Tag,
   LineChart,
 } from "lucide-react";
 import type { ComponentType } from "react";
@@ -44,7 +43,6 @@ const mainMenuItems: MenuItem[] = [
   { title: "Pedidos", url: "/pedidos", icon: ShoppingCart, permission: "gerenciar_pedidos" },
   { title: "Produtos", url: "/produtos", icon: Package, permission: "gerenciar_produtos" },
   { title: "Conteúdo", url: "/conteudo", icon: Megaphone, permission: "gerenciar_produtos" },
-  { title: "Cupons", url: "/cupons", icon: Tag, permission: "gerenciar_site" },
   { title: "Custos", url: "/custos", icon: DollarSign, permission: "ver_relatorios" },
   { title: "Relatórios", url: "/relatorios", icon: FileText, permission: "ver_relatorios" },
   { title: "Estoque", url: "/estoque", icon: BarChart3, permission: "gerenciar_estoque" },
