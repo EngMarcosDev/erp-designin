@@ -45,7 +45,7 @@ const ErpAccessPage = () => {
                 </button>
               </div>
             ) : (
-              <p>Seu usuario nao possui permissao de admin.</p>
+              <p>Seu usuário não possui permissão de admin.</p>
             )}
           </div>
         </div>
