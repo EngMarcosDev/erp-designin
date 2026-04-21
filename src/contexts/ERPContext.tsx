@@ -1,4 +1,5 @@
-﻿import React, { createContext, useContext, ReactNode, useMemo } from "react";
+﻿import React, { createContext, useContext, ReactNode, useMemo, useRef, useEffect } from "react";
+import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Product,
@@ -85,10 +86,31 @@ export function ERPProvider({ children }: { children: ReactNode }) {
     retry: false,
   });
 
+  const prevOrderCountRef = useRef<number | null>(null);
+
   const ordersQuery = useQuery({
     queryKey: ["erp", "orders"],
     queryFn: apiFetchOrders,
+    refetchInterval: 30000, // polling a cada 30s
   });
+
+  // Notificação de novos pedidos
+  useEffect(() => {
+    const list = Array.isArray(ordersQuery.data) ? ordersQuery.data : [];
+    const count = list.length;
+    if (prevOrderCountRef.current === null) {
+      prevOrderCountRef.current = count;
+      return;
+    }
+    const newCount = count - prevOrderCountRef.current;
+    if (newCount > 0) {
+      toast.success(
+        `🛒 ${newCount} novo${newCount > 1 ? "s pedidos chegaram" : " pedido chegou"}! Confira a lista.`,
+        { duration: 8000 }
+      );
+    }
+    prevOrderCountRef.current = count;
+  }, [ordersQuery.data]);
 
   const stockQuery = useQuery({
     queryKey: ["erp", "stock-compare"],
