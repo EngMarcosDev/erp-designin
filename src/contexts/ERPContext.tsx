@@ -94,12 +94,13 @@ export function ERPProvider({ children }: { children: ReactNode }) {
     refetchInterval: 30000, // polling a cada 30s
   });
 
-  // Notificação de novos pedidos
+  // Notificação de novos pedidos — só dispara após carga inicial
   useEffect(() => {
+    if (!ordersQuery.data) return; // aguarda dados reais chegarem
     const list = Array.isArray(ordersQuery.data) ? ordersQuery.data : [];
     const count = list.length;
     if (prevOrderCountRef.current === null) {
-      prevOrderCountRef.current = count;
+      prevOrderCountRef.current = count; // inicializa silenciosamente
       return;
     }
     const newCount = count - prevOrderCountRef.current;
