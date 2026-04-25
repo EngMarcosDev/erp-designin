@@ -40,6 +40,7 @@ import {
 import { useERP } from "@/contexts/ERPContext";
 import { useUISettings } from "@/contexts/UISettingsContext";
 import { CATEGORY_LABELS, Category } from "@/types/erp";
+import { useErpCategories } from "@/hooks/useErpCategories";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -87,6 +88,7 @@ export default function EstoquePage() {
   const { products, stockComparison, refreshStockComparison, syncToHeadshop, syncFromHeadshop, updateProduct } =
     useERP();
   const { lowStockThreshold, compactTables } = useUISettings();
+  const { categories: apiCategories } = useErpCategories(true);
   const importInputRef = useRef<HTMLInputElement>(null);
 
   const [isComparisonOpen, setIsComparisonOpen] = useState(false);
@@ -101,19 +103,35 @@ export default function EstoquePage() {
   const [page, setPage] = useState<number>(1);
 
   const categoryOptions = useMemo(() => {
-    // Collect unique categories from actual products (excluding banners)
-    const fromProducts = Array.from(
-      new Set(products.filter((p) => p.category && p.category !== "banners").map((p) => p.category))
-    );
-    // Merge with hardcoded labels (in case some have 0 products)
-    const fromLabels = Object.keys(CATEGORY_LABELS).filter((c) => c !== "banners");
-    const merged = Array.from(new Set([...fromLabels, ...fromProducts]));
-    return merged.map((category) => ({
-      category,
-      label: CATEGORY_LABELS[category] || category,
-      count: products.filter((p) => p.category === category).length,
-    }));
-  }, [products]);
+    // Regra: exibir TODAS as categorias conhecidas — venham da API, dos produtos
+    // ou do dicionário local CATEGORY_LABELS — incluindo as que não têm produto algum.
+    // Isso garante que slugs novos (isqueiros, slicks) apareçam mesmo enquanto não
+    // estão sincronizados no backend ou ainda não receberam produto.
+    const merged = new Map<string, { slug: string; name: string }>();
+
+    apiCategories
+      .filter((c) => c.slug && c.slug !== "banners")
+      .forEach((c) => merged.set(c.slug, { slug: c.slug, name: c.name }));
+
+    products.forEach((p) => {
+      const slug = p.category;
+      if (!slug || slug === "banners" || merged.has(slug)) return;
+      merged.set(slug, { slug, name: CATEGORY_LABELS[slug] || slug });
+    });
+
+    Object.entries(CATEGORY_LABELS).forEach(([slug, name]) => {
+      if (!slug || slug === "banners" || merged.has(slug)) return;
+      merged.set(slug, { slug, name });
+    });
+
+    return Array.from(merged.values())
+      .map(({ slug, name }) => ({
+        category: slug,
+        label: name,
+        count: products.filter((p) => p.category === slug).length,
+      }))
+      .sort((a, b) => a.label.localeCompare(b.label, "pt-BR"));
+  }, [products, apiCategories]);
 
   const filteredProducts = useMemo(
     () =>
@@ -588,7 +606,7 @@ export default function EstoquePage() {
                             ) : null}
                           </TableCell>
                           <TableCell>
-                            <Badge variant="secondary">{CATEGORY_LABELS[product.category]}</Badge>
+                            <Badge variant="secondary">{CATEGORY_LABELS[product.category] || product.category}</Badge>
                           </TableCell>
                           <TableCell>
                             <Badge variant={product.active ? "default" : "secondary"}>

@@ -86,7 +86,10 @@ export function ERPProvider({ children }: { children: ReactNode }) {
     retry: false,
   });
 
-  const prevOrderCountRef = useRef<number | null>(null);
+  // Notificação de novos pedidos: só dispara para pedidos criados HOJE que ainda
+  // não foram vistos nesta sessão. Antes a regra era "diferença de contagem", o
+  // que disparava toasts em pedidos antigos que reapareciam após filtros/refresh.
+  const seenOrderIdsRef = useRef<Set<string> | null>(null);
 
   const ordersQuery = useQuery({
     queryKey: ["erp", "orders"],
@@ -94,23 +97,43 @@ export function ERPProvider({ children }: { children: ReactNode }) {
     refetchInterval: 30000, // polling a cada 30s
   });
 
-  // Notificação de novos pedidos — só dispara após carga inicial
   useEffect(() => {
-    if (!ordersQuery.data) return; // aguarda dados reais chegarem
+    if (!ordersQuery.data) return;
     const list = Array.isArray(ordersQuery.data) ? ordersQuery.data : [];
-    const count = list.length;
-    if (prevOrderCountRef.current === null) {
-      prevOrderCountRef.current = count; // inicializa silenciosamente
+
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    const startTs = startOfToday.getTime();
+
+    const isCreatedToday = (order: any) => {
+      const raw = order?.createdAt ?? order?.created_at ?? order?.placedAt;
+      if (!raw) return false;
+      const ts = new Date(raw).getTime();
+      return Number.isFinite(ts) && ts >= startTs;
+    };
+
+    // Primeira carga: inicializa "vistos" com TODOS os ids (silencioso)
+    if (seenOrderIdsRef.current === null) {
+      seenOrderIdsRef.current = new Set(list.map((o: any) => String(o?.id ?? o?.orderNumber ?? "")).filter(Boolean));
       return;
     }
-    const newCount = count - prevOrderCountRef.current;
-    if (newCount > 0) {
+
+    const seen = seenOrderIdsRef.current;
+    const newToday: any[] = [];
+    for (const order of list) {
+      const id = String(order?.id ?? order?.orderNumber ?? "");
+      if (!id || seen.has(id)) continue;
+      seen.add(id);
+      if (isCreatedToday(order)) newToday.push(order);
+    }
+
+    if (newToday.length > 0) {
+      const n = newToday.length;
       toast.success(
-        `🛒 ${newCount} novo${newCount > 1 ? "s pedidos chegaram" : " pedido chegou"}! Confira a lista.`,
+        `🛒 ${n} novo${n > 1 ? "s pedidos chegaram" : " pedido chegou"} hoje! Confira a lista.`,
         { duration: 8000 }
       );
     }
-    prevOrderCountRef.current = count;
   }, [ordersQuery.data]);
 
   const stockQuery = useQuery({

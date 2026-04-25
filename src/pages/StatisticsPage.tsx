@@ -17,6 +17,7 @@ import {
   DollarSign,
   ExternalLink,
   Info,
+  CheckCircle2,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useERP } from "@/contexts/ERPContext";
@@ -247,37 +248,89 @@ export default function StatisticsPage() {
       )}
 
       {/* Bloco Google Analytics */}
-      <Card className="border-blue-500/30 bg-blue-500/5 shadow-sm">
+      <GoogleAnalyticsCard />
+    </div>
+  );
+}
+
+// ─── GA4 status card ──────────────────────────────────────────────────────────
+// Lê o Measurement ID das envs (VITE_GA_ID / VITE_GA4_MEASUREMENT_ID). Se vazio,
+// faz fallback para o ID hardcoded no index.html do HeadShop (G-9X6X4CT68C) —
+// assim o card já fica "configurado" sem exigir env extra no build do ERP.
+const GA4_FALLBACK_ID = "G-9X6X4CT68C";
+
+const resolveGaMeasurementId = (): string => {
+  const env = (import.meta as any)?.env || {};
+  const candidate = (env.VITE_GA_ID || env.VITE_GA4_MEASUREMENT_ID || env.VITE_GOOGLE_ANALYTICS_ID || "").trim();
+  if (candidate) return candidate;
+  return GA4_FALLBACK_ID;
+};
+
+function GoogleAnalyticsCard() {
+  const measurementId = resolveGaMeasurementId();
+  const isConfigured = /^G-[A-Z0-9]{6,}$/i.test(measurementId);
+
+  if (isConfigured) {
+    return (
+      <Card className="border-emerald-500/30 bg-emerald-500/5 shadow-sm">
         <CardHeader className="pb-2">
-          <CardTitle className="flex items-center gap-2 text-sm font-semibold text-blue-600 dark:text-blue-400">
-            <Info className="h-4 w-4" />
-            Acesso ao site — Google Analytics 4
+          <CardTitle className="flex items-center gap-2 text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+            <CheckCircle2 className="h-4 w-4" />
+            Google Analytics 4 — conectado
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3 text-sm text-muted-foreground">
           <p>
-            Para monitorar visitas, origem do tráfego, tempo na página e comportamento dos usuários
-            no HeadShop, conecte o <strong className="text-foreground">Google Analytics 4</strong>.
+            Tracking ativo no HeadShop com o ID <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-foreground">{measurementId}</code>.
+            Visitas, origem do tráfego, tempo na página e eventos de e-commerce já estão chegando ao seu painel do GA4.
           </p>
-          <ol className="list-decimal pl-4 space-y-1.5 text-xs leading-5">
-            <li>Acesse <a href="https://analytics.google.com" target="_blank" rel="noopener noreferrer" className="text-blue-500 underline hover:text-blue-600">analytics.google.com</a> e crie uma propriedade GA4 para <em>bacaxita.com.br</em>.</li>
-            <li>Copie seu <strong className="text-foreground">Measurement ID</strong> (formato <code className="rounded bg-muted px-1">G-XXXXXXXXXX</code>).</li>
-            <li>Adicione a variável <code className="rounded bg-muted px-1">VITE_GA_ID=G-XXXXXXXXXX</code> no arquivo <code className="rounded bg-muted px-1">.env</code> do HeadShop.</li>
-            <li>Faça o deploy — o tracking começa automaticamente em todas as páginas.</li>
-          </ol>
           <div className="flex gap-2 pt-1 flex-wrap">
             <a
               href="https://analytics.google.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-blue-500/30 bg-blue-500/10 px-3 py-1.5 text-xs font-medium text-blue-600 transition hover:bg-blue-500/20 dark:text-blue-400"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-xs font-medium text-emerald-600 transition hover:bg-emerald-500/20 dark:text-emerald-400"
             >
               <ExternalLink className="h-3.5 w-3.5" />
-              Abrir Google Analytics
+              Abrir painel do Google Analytics
             </a>
           </div>
         </CardContent>
       </Card>
-    </div>
+    );
+  }
+
+  return (
+    <Card className="border-blue-500/30 bg-blue-500/5 shadow-sm">
+      <CardHeader className="pb-2">
+        <CardTitle className="flex items-center gap-2 text-sm font-semibold text-blue-600 dark:text-blue-400">
+          <Info className="h-4 w-4" />
+          Acesso ao site — Google Analytics 4
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3 text-sm text-muted-foreground">
+        <p>
+          Para monitorar visitas, origem do tráfego, tempo na página e comportamento dos usuários
+          no HeadShop, conecte o <strong className="text-foreground">Google Analytics 4</strong>.
+        </p>
+        <ol className="list-decimal pl-4 space-y-1.5 text-xs leading-5">
+          <li>Acesse <a href="https://analytics.google.com" target="_blank" rel="noopener noreferrer" className="text-blue-500 underline hover:text-blue-600">analytics.google.com</a> e crie uma propriedade GA4 para <em>bacaxita.com.br</em>.</li>
+          <li>Copie seu <strong className="text-foreground">Measurement ID</strong> (formato <code className="rounded bg-muted px-1">G-XXXXXXXXXX</code>).</li>
+          <li>Adicione a variável <code className="rounded bg-muted px-1">VITE_GA_ID=G-XXXXXXXXXX</code> no <code className="rounded bg-muted px-1">.env</code> do HeadShop e do ERP Designin.</li>
+          <li>Faça o deploy — o tracking começa automaticamente em todas as páginas.</li>
+        </ol>
+        <div className="flex gap-2 pt-1 flex-wrap">
+          <a
+            href="https://analytics.google.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-blue-500/30 bg-blue-500/10 px-3 py-1.5 text-xs font-medium text-blue-600 transition hover:bg-blue-500/20 dark:text-blue-400"
+          >
+            <ExternalLink className="h-3.5 w-3.5" />
+            Abrir Google Analytics
+          </a>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

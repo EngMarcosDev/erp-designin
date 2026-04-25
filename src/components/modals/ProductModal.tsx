@@ -712,8 +712,16 @@ export function ProductModal({ open, onClose, productId, initialMode = "product"
     const normalizedCategory = (isBannerMode ? "banners" : formData.category) as Category;
     const normalizedGallery = dedupeImageList(formData.gallery);
 
+    // Banner com nome vazio: backend exige name.min(1). Geramos um placeholder
+    // automático (ex: "Banner 2026-04-25T18:32") quando o usuário deixa em branco
+    // — antes, enviar `name: ""` retornava 400 Bad Request na criação/edição.
+    const trimmedName = formData.name.trim();
+    const safeName = trimmedName || (isBannerMode
+      ? `Banner ${new Date().toISOString().slice(0, 16).replace("T", " ")}`
+      : "");
+
     const productData = {
-      name: formData.name.trim(),
+      name: safeName,
       description: formData.description.trim() || undefined,
       details: formData.details.trim() || undefined,
       price,
