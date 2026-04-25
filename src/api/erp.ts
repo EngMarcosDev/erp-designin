@@ -184,12 +184,17 @@ const sanitizePayload = (value: unknown): unknown => {
 const request = async (path: string, init?: RequestInit) => {
   let response: Response;
   try {
+    // Quando não há body (caso típico de DELETE/GET), removemos o Content-Type
+    // application/json — Fastify tenta fazer parse de body vazio se o header
+    // está presente e devolve 400 "Bad Request: Body cannot be empty".
+    const headers = { ...buildHeaders(), ...(init?.headers || {}) } as Record<string, string>;
+    if (init?.body == null) {
+      delete headers["Content-Type"];
+    }
+
     response = await fetch(`${apiBase}${path}`, {
       ...init,
-      headers: {
-        ...buildHeaders(),
-        ...(init?.headers || {}),
-      },
+      headers,
     });
   } catch {
     throw new Error("Falha de conexão com o servidor. Verifique se o backend está online.");

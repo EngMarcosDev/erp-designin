@@ -32,7 +32,7 @@ import { formatPrice } from "@/lib/priceFormatter";
 import { STATUS_LABELS } from "@/types/erp";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import ProfitGauge from "@/components/erp/ProfitGauge";
+// ProfitGauge agora vive em StatisticsPage — import removido pois não é mais usado aqui.
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50] as const;
 
@@ -270,8 +270,7 @@ export default function PedidosPage() {
             </Card>
           ))}
         </div>
-
-        <ProfitGauge orders={orders} />
+        {/* Painel de Lucro foi movido para a aba Estatisticas — ver StatisticsPage. */}
       </div>
 
       <Card>

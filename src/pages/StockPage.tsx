@@ -606,7 +606,13 @@ export default function EstoquePage() {
                             ) : null}
                           </TableCell>
                           <TableCell>
-                            <Badge variant="secondary">{CATEGORY_LABELS[product.category] || product.category}</Badge>
+                            {product.category ? (
+                              <Badge variant="secondary">{CATEGORY_LABELS[product.category] || product.category}</Badge>
+                            ) : (
+                              <Badge variant="outline" className="border-dashed border-amber-500/40 text-amber-600">
+                                Sem categoria
+                              </Badge>
+                            )}
                           </TableCell>
                           <TableCell>
                             <Badge variant={product.active ? "default" : "secondary"}>

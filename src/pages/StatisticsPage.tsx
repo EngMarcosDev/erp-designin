@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useERP } from "@/contexts/ERPContext";
+import ProfitGauge from "@/components/erp/ProfitGauge";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -127,6 +128,9 @@ export default function StatisticsPage() {
           Métricas internas baseadas nos pedidos do ERP.
         </p>
       </div>
+
+      {/* Painel de Lucro — antes vivia em "Pedidos", movido para Estatisticas */}
+      <ProfitGauge orders={orders} />
 
       {/* KPIs */}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
