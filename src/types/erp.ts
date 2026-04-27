@@ -132,6 +132,8 @@ export const CATEGORY_LABELS: Record<string, string> = {
   acessorios: "Acessorios",
   tesoura: "Tesouras",
   tesouras: "Tesouras",
+  isqueiros: "Isqueiros",
+  slicks: "Slicks",
   banners: "Banners",
 };
 
@@ -142,6 +144,8 @@ export const CATEGORY_COLORS: Record<string, string> = {
   cuia: "category-cuia",
   acessorios: "category-acessorios",
   fumigenos: "category-fumigenos",
+  isqueiros: "bg-orange-500/80",
+  slicks: "bg-sky-500/80",
   banners: "bg-amber-600/80",
 };
 
