@@ -12,6 +12,7 @@
   Megaphone,
   DollarSign,
   LineChart,
+  TicketPercent,
 } from "lucide-react";
 import type { ComponentType } from "react";
 import { useNavigate } from "react-router-dom";
@@ -43,6 +44,7 @@ const mainMenuItems: MenuItem[] = [
   { title: "Pedidos", url: "/pedidos", icon: ShoppingCart, permission: "gerenciar_pedidos" },
   { title: "Produtos", url: "/produtos", icon: Package, permission: "gerenciar_produtos" },
   { title: "Conteúdo", url: "/conteudo", icon: Megaphone, permission: "gerenciar_produtos" },
+  { title: "Cupons", url: "/cupons", icon: TicketPercent, permission: "gerenciar_cupons" },
   { title: "Custos", url: "/custos", icon: DollarSign, permission: "ver_relatorios" },
   { title: "Relatórios", url: "/relatorios", icon: FileText, permission: "ver_relatorios" },
   { title: "Estoque", url: "/estoque", icon: BarChart3, permission: "gerenciar_estoque" },
